@@ -4,7 +4,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 17th March 2012
-;; Version: 0.0.1
+;; Version: 0.0.2
 ;; Keywords: lisp, tools
 
 ;; This file is NOT part of GNU Emacs.
@@ -408,5 +408,7 @@ will be added as necessary."
     (should (equal
              '(20299 65357)
              (elt (file-attributes "/home/test/somefile") 5)))))
+
+(provide 'fakir)
 ;
 ;;; fakir.el ends here
