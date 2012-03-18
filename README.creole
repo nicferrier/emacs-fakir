@@ -1,0 +1,53 @@
+This is a bunch of functions to mock core Emacs Lisp objects for
+testing purposes.
+
+=== fakir-file &rest args ===
+
+Make a fakir-file, a struct.
+
+
+=== fakir-mock-file fakir-file &rest body ===
+
+Mock the filesystem with the //fakir-file// object.
+
+
+=== fakir-mock-process process-bindings &rest body ===
+
+Allow easier testing by mocking the process functions.
+
+For example:
+
+{{{
+ (fakir-mock-process (:elnode-http-params
+                     (:elnode-http-method "GET")
+                     (:elnode-http-query "a=10"))
+   (should (equal 10 (elnode-http-param 't "a")))
+   )
+}}}
+
+Causes:
+
+{{{
+ (process-get anything :elnode-http-method)
+}}}
+
+to always return "GET".
+
+`process-put' is also remapped, currently to swallow any setting.
+
+`process-buffer' is also remapped, to deliver the value of the
+key [[:buffer]] if present and a dummy buffer otherwise.
+
+We return what the //body// returned.
+
+
+=== fakir-test-mock-process  ===
+
+A very quick function to test mocking process macro.
+
+
+=== fakir-time-encode time-str ===
+
+Encode the //time-str// as an EmacsLisp time.
+
+
