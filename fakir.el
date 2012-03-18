@@ -203,6 +203,10 @@ We return what the BODY returned."
   ;; obviously there should be all the state of the file here
   (mtime "Mon, Feb 27 2012 22:10:19 GMT"))
 
+(defun fakir-file (&rest args)
+  "Make a fakir-file, a struct."
+  (apply 'make-fakir-file args))
+
 (defun fakir--file-check (file)
   "Implements the type check for FILE is a `fakir--file'."
   (if (not (fakir-file-p file))
