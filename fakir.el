@@ -353,7 +353,23 @@ part."
 
 
 (defmacro fakir-mock-file (fakir-file &rest body)
-  "Mock the filesystem with the FAKIR-FILE object."
+  "Mock the filesystem with the FAKIR-FILE object.
+
+The Emacs Lisp file operations are flet'd so that they operate on
+the FAKIR-FILE.
+
+For example:
+
+ (fakir-mock-file (fakir-file
+                     :filename \"README\"
+                     :directory \"/home/emacs/fakir\")
+    (expand-file-name \"~/fakir/README\"))
+
+ => \"/home/emacs/fakir/README\"
+
+The operations that are supported by the fleted functions are:
+`file-attributes', `file-exists-p' and `expand-file-name'. Others
+will be added as necessary."
   (declare (debug (sexp &rest form))
            (indent defun))
   (let ((fv (make-symbol "fakir-filev")))
