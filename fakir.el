@@ -302,6 +302,8 @@ part."
 
 (defun fakir--expand-file-name (file-name home-root)
   "Simple implementation of .. and ~ handling for FILE-NAME."
+  ;; tali713 recomended this as a replacement here
+  ;; http://paste.lisp.org/display/128254
   (let* ((file-path (replace-regexp-in-string
                      "^~/\\(.\\)"
                      (concat home-root "/" "\\1")
