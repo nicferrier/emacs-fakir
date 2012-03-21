@@ -4,7 +4,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 17th March 2012
-;; Version: 0.0.2
+;; Version: 0.0.3
 ;; Keywords: lisp, tools
 
 ;; This file is NOT part of GNU Emacs.
@@ -177,7 +177,7 @@ We return what the BODY returned."
     (let ((z 10))
       (let ((a "my string!!!"))
         (setq a (process-get t :somevar))
-        (print a)))))
+        a))))
 
 (ert-deftest fakir-mock-process ()
   "Test mock process."
@@ -352,7 +352,6 @@ part."
      "/home/emacsuser/bladh/../../../../../../qwdqdq.x"
      "/home")
     "/qwdqdq.x")))
-
 
 (defmacro fakir-mock-file (fakir-file &rest body)
   "Mock the filesystem with the FAKIR-FILE object.
