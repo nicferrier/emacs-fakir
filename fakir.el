@@ -4,7 +4,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 17th March 2012
-;; Version: 0.0.3
+;; Version: 0.0.4
 ;; Keywords: lisp, tools
 
 ;; This file is NOT part of GNU Emacs.
@@ -62,8 +62,8 @@ though, needs to set the process-buffer to work properly.")
 For example:
 
  (fakir-mock-process (:elnode-http-params
-                     (:elnode-http-method \"GET\")
-                     (:elnode-http-query \"a=10\"))
+                      (:elnode-http-method \"GET\")
+                      (:elnode-http-query \"a=10\"))
    (should (equal 10 (elnode-http-param 't \"a\")))
    )
 
@@ -76,7 +76,7 @@ to always return \"GET\".
 `process-put' is also remapped, currently to swallow any setting.
 
 `process-buffer' is also remapped, to deliver the value of the
-key ':buffer' if present and a dummy buffer otherwise.
+key `:buffer' if present and a dummy buffer otherwise.
 
 We return what the BODY returned."
   (declare
@@ -304,10 +304,13 @@ part."
   "Simple implementation of .. and ~ handling for FILE-NAME."
   ;; tali713 recomended this as a replacement here
   ;; http://paste.lisp.org/display/128254
-  (let* ((file-path (replace-regexp-in-string
+  (let* ((fqfn (if (string-match "^\\(~/\\|/\\).*" file-name)
+                   file-name
+                  (concat home-root "/" file-name)))
+         (file-path (replace-regexp-in-string
                      "^~/\\(.\\)"
                      (concat home-root "/" "\\1")
-                     file-name))
+                     fqfn))
          (path (split-string file-path "/" t))
          res)
     (while path
@@ -325,33 +328,39 @@ part."
   (should
    (equal
     (fakir--expand-file-name
-     "/home/emacsuser/bladh/qdqnwd/qwdqdq.x"
+     "blah"
      "/home/emacsuser")
-    "/home/emacsuser/bladh/qdqnwd/qwdqdq.x"))
+    "/home/emacsuser/blah"))
   (should
    (equal
     (fakir--expand-file-name
-     "/home/emacsuser/bladh/../qwdqdq.x"
+     "/home/emacsuser/bladh/qdqnwd/qwdqdq.1"
      "/home/emacsuser")
-    "/home/emacsuser/qwdqdq.x"))
+    "/home/emacsuser/bladh/qdqnwd/qwdqdq.1"))
   (should
    (equal
     (fakir--expand-file-name
-     "qwdqdq.x"
-     "/home")
-    "qwdqdq.x"))
+     "/home/emacsuser/bladh/../qwdqdq.2"
+     "/home/emacsuser")
+    "/home/emacsuser/qwdqdq.2"))
   (should
    (equal
     (fakir--expand-file-name
-     "/qwdqdq.x"
+     "qwdqdq.3"
      "/home")
-    "/qwdqdq.x"))
+    "/home/qwdqdq.3"))
   (should
    (equal
     (fakir--expand-file-name
-     "/home/emacsuser/bladh/../../../../../../qwdqdq.x"
+     "/qwdqdq.4"
      "/home")
-    "/qwdqdq.x")))
+    "/qwdqdq.4"))
+  (should
+   (equal
+    (fakir--expand-file-name
+     "/home/emacsuser/bladh/../../../../../../qwdqdq.5"
+     "/home")
+    "/qwdqdq.5")))
 
 (defmacro fakir-mock-file (fakir-file &rest body)
   "Mock the filesystem with the FAKIR-FILE object.
