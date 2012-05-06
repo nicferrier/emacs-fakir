@@ -4,7 +4,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 17th March 2012
-;; Version: 0.0.4
+;; Version: 0.0.5
 ;; Keywords: lisp, tools
 
 ;; This file is NOT part of GNU Emacs.
@@ -200,6 +200,7 @@ We return what the BODY returned."
 (defstruct fakir-file
   filename
   directory
+  (content "")
   ;; obviously there should be all the state of the file here
   (mtime "Mon, Feb 27 2012 22:10:19 GMT"))
 
@@ -362,6 +363,24 @@ part."
      "/home")
     "/qwdqdq.5")))
 
+(defun fakir--find-file (fakir-file)
+  (let ((buf (get-buffer-create (fakir-file-filename fakir-file))))
+    (with-current-buffer buf
+      (insert (fakir-file-content fakir-file)))
+    buf))
+
+(ert-deftest fakir--find-file ()
+  (let ((f (fakir-file :filename "README"
+                       :directory "/home/fakir"
+                       :content "This is a ReadMe file.")))
+    (let ((buf (fakir--find-file f)))
+      (unwind-protect
+          (with-current-buffer buf
+            (should
+             (equal "This is a ReadMe file."
+                    (buffer-substring (point-min) (point-max)))))
+        (kill-buffer buf)))))
+
 (defmacro fakir-mock-file (fakir-file &rest body)
   "Mock the filesystem with the FAKIR-FILE object.
 
@@ -398,7 +417,13 @@ will be added as necessary."
                (file-name &optional def-dir)
                (fakir--expand-file-name
                 file-name
-                (or def-dir home-root))))
+                (or def-dir home-root)))
+              (find-file
+               (file-name)
+               (fakir--find-file ,fv))
+              (find-file-noselect
+               (file-name)
+               (fakir--find-file ,fv)))
          ,@body))))
 
 (ert-deftest fakir-mock-file ()
@@ -406,7 +431,15 @@ will be added as necessary."
   (fakir-mock-file (make-fakir-file
                       :filename "somefile"
                       :directory "/home/test"
+                      :content "This is a file."
                       :mtime "Mon, Feb 27 2012 22:10:21 GMT")
+    (let ((buf (find-file "/home/test/somefile")))
+      (unwind-protect
+          (with-current-buffer buf
+            (should
+             (equal "This is a file."
+                    (buffer-substring (point-min) (point-max)))))
+        (kill-buffer buf)))
     (should (file-exists-p "/home/test/somefile"))
     (should-not (file-exists-p "/home/test/otherfile"))
     (should-not (file-exists-p "/home/dir/somefile"))
