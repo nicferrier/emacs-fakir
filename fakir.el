@@ -56,6 +56,33 @@ properly. Normally, tests do not need to set the process-buffer
 directly, they can just expect it to be there. `elnode--filter',
 though, needs to set the process-buffer to work properly.")
 
+
+(defun fakir--make-hash-table (alist)
+  "Make a hash table from the ALIST.
+
+The ALIST looks like a let-list."
+  (let ((bindings (make-hash-table :test 'equal)))
+    (loop for f in (append
+                    (list (list :fakir-mock-process t))
+                    alist)
+       do
+         (if (and f (listp f))
+             (puthash (car f) (cadr f) bindings)
+             (puthash f nil bindings)))
+    bindings))
+
+(ert-deftest fakir--make-hash-table ()
+  "Test hash table construction."
+  (let ((h (fakir--make-hash-table '((a 10)
+                                     (b 20)
+                                     (fakir-alist-value "is a string")
+                                     fakir-single-value
+                                     :self-evaling-symbol-as-well))))
+    (should (equal 10 (gethash 'a h)))
+    (should (equal 20 (gethash 'b h)))
+    (should (equal nil (gethash 'fakir-single-value h)))
+    (should (equal nil (gethash ':self-evaling-symbol-as-well h)))))
+
 (defmacro fakir-mock-process (process-bindings &rest body)
   "Allow easier testing by mocking the process functions.
 
@@ -86,40 +113,20 @@ We return what the BODY returned."
         (pvbuf (make-symbol "buf"))
         (result (make-symbol "result")))
     `(let
-         ;; Turn the list of bindings into an alist
-         (,result
-          ;; Make a dummy buffer variable for the process - we fill
-          ;; this in dynamically in 'process-buffer
-          ,pvbuf
-          (,pvvar
-           (list
-            ,@(loop
-               for f in
-               ;; We need to make sure there is always something in this alist
-               (append
-                (list (list :fakir-mock-process t))
-                process-bindings)
-               collect
-               (if (and f (listp f))
-                   (list 'cons `(quote ,(car f)) (cadr f))
-                 (list 'cons `,f nil))))))
+         ((,pvvar (fakir--make-hash-table (quote ,process-bindings)))
+          ;; For assigning the result of the body
+          ,result
+          ;; Dummy buffer variable for the process - we fill this in
+          ;; dynamically in 'process-buffer
+          ,pvbuf)
        ;; Rebind the process function interface
-       (flet ((process-get
-               (proc key)
-               ;;(message "override pget called %s" key)
-               (let ((pair (assoc key ,pvvar)))
-                 ;;(message "override pget called %s %s" key pair)
-                 (if pair
-                     (cdr pair))))
-              (processp ;; we really need to define a proper fake process
-               (proc)
+       (flet ((process-get (proc key)
+                (gethash key ,pvvar))
+              (process-put (proc key value)
+                (puthash key value ,pvvar))
+              ;; We really need to define a proper fake process
+              (processp (proc)
                t)
-              (process-put ; Only adds, doesn't edit.
-               (proc key value)
-               ;;(message "override pput called %s %s" key value)
-               (nconc ,pvvar (list (cons key value)))
-               ;;(message "pput -> %s" ,pvvar)
-               )
               (get-or-create-pvbuf
                (proc &optional specified-buf)
                (if (bufferp ,pvbuf)
@@ -134,9 +141,9 @@ We return what the BODY returned."
                               (generate-new-buffer-name
                                "* fakir mock proc buf *")))))
                  ;; If we've got a buffer value then insert it.
-                 (when (assoc :buffer ,pvvar)
+                 (when (gethash :buffer ,pvvar)
                    (with-current-buffer ,pvbuf
-                     (insert (cdr (assoc :buffer ,pvvar)))))
+                     (insert (gethash :buffer ,pvvar))))
                  ,pvbuf))
               (process-send-string
                (proc str)
