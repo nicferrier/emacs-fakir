@@ -4,7 +4,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 17th March 2012
-;; Version: 0.0.6
+;; Version: 0.0.7
 ;; Keywords: lisp, tools
 
 ;; This file is NOT part of GNU Emacs.
@@ -66,9 +66,11 @@ The ALIST looks like a let-list."
                     (list (list :fakir-mock-process t))
                     alist)
        do
-         (if (and f (listp f))
-             (puthash (car f) (cadr f) bindings)
-             (puthash f nil bindings)))
+         (cond
+           ((and f (listp f))
+            (puthash (car f) (cadr f) bindings))
+           (t
+            (puthash f nil bindings))))
     bindings))
 
 (ert-deftest fakir--make-hash-table ()
@@ -113,7 +115,13 @@ We return what the BODY returned."
         (pvbuf (make-symbol "buf"))
         (result (make-symbol "result")))
     `(let
-         ((,pvvar (fakir--make-hash-table (quote ,process-bindings)))
+         ((,pvvar
+           (fakir--make-hash-table
+            (list ,@(loop for p in process-bindings
+                       collect
+                         (if (and p (listp p))
+                             (list 'list `(quote ,(car p)) (cadr p))
+                             (list 'cons `,p nil))))))
           ;; For assigning the result of the body
           ,result
           ;; Dummy buffer variable for the process - we fill this in
@@ -166,8 +174,7 @@ We return what the BODY returned."
               (set-process-buffer
                (proc buffer)
                (get-or-create-pvbuf proc buffer)))
-         (setq ,result (progn ,@body))
-         )
+         (setq ,result (progn ,@body)))
        ;; Now clean up
        (when (bufferp ,pvbuf)
          (with-current-buffer ,pvbuf
@@ -178,19 +185,21 @@ We return what the BODY returned."
 
 (defun fakir-test-mock-process ()
   "A very quick function to test mocking process macro."
-  (fakir-mock-process
-    ((a 20)
-     (:somevar 15))
-    (let ((z 10))
-      (let ((a "my string!!!"))
-        (setq a (process-get t :somevar))
-        a))))
+  (let ((somevalue 30))
+    (fakir-mock-process
+        ((a 20)
+         (:somevar 15)
+         (:othervar somevalue))
+        (let ((z 10))
+          (let ((a "my string!!!"))
+            (setq a (process-get t :somevar))
+            (list a (process-get t :othervar)))))))
 
 (ert-deftest fakir-mock-process ()
   "Test mock process."
   :tags '(unit)
   (let ((x (fakir-test-mock-process)))
-    (should (equal 15 x))))
+    (should (equal '(15 30) x))))
 
 
 ;; Time utils
