@@ -4,7 +4,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 17th March 2012
-;; Version: 0.0.7
+;; Version: 0.0.8
 ;; Keywords: lisp, tools
 
 ;; This file is NOT part of GNU Emacs.
@@ -46,6 +46,98 @@
 (require 'ert)
 (eval-when-compile (require 'cl))
 
+
+;; A little support code - not sure I can be bothered to package this
+;; seperately
+
+(defmacro* flet-overrides (predicate
+			   bindings
+			   &rest form)
+  "Override functions only when an argument tests true.
+
+PREDICATE is some test to be applied to a specified argument
+of each bound FUNC to decide whether to execute the overridden
+code or the existing code.
+
+For each function, TEST-ARG specifies the name of the argument in
+the ARGLIST which will be passed to the PREDICATE.
+
+BODY defines the code to be run for the specified FUNC when the
+PREDICATE is `t' for the TEST-ARG.
+
+This is really useful when you want to mock a set of functions
+that operate on a particular type, processes for example:
+
+  (flet-overrides fake-process-p
+     ((process-buffer process (process)
+        (get-buffer-create \"\"))
+      (process-status process (process)
+        \"run\")
+      (delete-process process (process)
+        t)
+      (set-process-buffer process (process buffer)
+        nil))
+    ;; Code under test
+    ...)
+
+\(fn PREDICATE ((FUNC TEST-ARG ARGLIST BODY...) ...) FORM...)"
+  (declare (indent defun))
+  (let*
+      ((flets
+	(loop
+	 for i in bindings
+	 collect
+	 (destructuring-bind (name test-arg args &rest body) i
+	   (let ((saved-func-namev (make-symbol "saved-func-name")))
+	     (let ((saved-func-namev
+		    (intern (format "saved-func-%s"
+				    (symbol-name name)))))
+	       `(,name ,args
+		       (if (not (,predicate ,test-arg))
+			   (funcall ,saved-func-namev ,@args)
+			 ,@body)))))))
+       (lets
+	(loop
+	 for i in bindings
+	 collect
+	 (destructuring-bind (name test-arg args &rest body) i
+	   (let ((saved-func-namev (make-symbol "saved-func-name")))
+	     (let ((saved-func-namev
+		    (intern (format "saved-func-%s"
+				    (symbol-name name)))))
+	       `(,saved-func-namev
+		 (symbol-function (quote ,name)))))))))
+    `(let ,lets
+       (flet ,flets
+	 ,@form))))
+
+(ert-deftest flet-overrides ()
+  "Test the flet-override stuff."
+  (flet ((my-test (x)
+		  (and
+		   (listp x)
+		   (let ((v (car x)))
+		     (eq :object v))))
+	 (my-func (x y)
+		  (format "strings: %s %s" x y))
+	 (my-proc (z)
+		  (* 2 x)))
+    (flet-overrides
+      my-test ; the type predicate we'll use
+      ((my-func a (a b)
+		(+ (cadr a) b))
+       (my-proc y (x y)
+		(+ 10 y)))
+      (should
+       (equal
+	'("strings: nic caroline" 7)
+	(list
+	 ;; This call doesn't match the predicate
+	 (my-func "nic" "caroline")
+	 ;; This call does match the predicate
+	 (my-func '(:object 5) 2)))))))
+
+
 ;; Mocking processes
 
 (defvar fakir-mock-process-require-specified-buffer nil
@@ -85,20 +177,50 @@ The ALIST looks like a let-list."
     (should (equal nil (gethash 'fakir-single-value h)))
     (should (equal nil (gethash ':self-evaling-symbol-as-well h)))))
 
-(defmacro fakir-mock-process (process-bindings &rest body)
+(defun fakir--get-or-create-buf (pvbuf pvvar &optional specified-buf)
+  "Special get or create to support the process mocking.
+
+PVBUF is a, possibly existing, buffer reference.  If nil then we
+create the buffer.
+
+PVVAR is a hashtable of properties, possibly containing the
+`:buffer' property which specifies a string to be used as the
+content of the buffer.
+
+SPECIFIED-BUF is an optional buffer to use instead of a dummy
+created one."
+  (if (bufferp pvbuf)
+      pvbuf
+    (setq pvbuf
+	  (if fakir-mock-process-require-specified-buffer
+	      (if (bufferp specified-buf)
+		  specified-buf
+		nil)
+	    (or specified-buf
+		(get-buffer-create
+		 (generate-new-buffer-name
+		  "* fakir mock proc buf *")))))
+    ;; If we've got a buffer value then insert it.
+    (when (gethash :buffer pvvar)
+      (with-current-buffer pvbuf
+	(insert (gethash :buffer pvvar))))
+    pvbuf))
+
+
+(defmacro fakir-mock-process (process-symbol process-bindings &rest body)
   "Allow easier testing by mocking the process functions.
 
 For example:
 
- (fakir-mock-process (:elnode-http-params
-                      (:elnode-http-method \"GET\")
-                      (:elnode-http-query \"a=10\"))
-   (should (equal 10 (elnode-http-param 't \"a\")))
-   )
+ (fakir-mock-process :fake
+      (:elnode-http-params
+       (:elnode-http-method \"GET\")
+       (:elnode-http-query \"a=10\"))
+   (should (equal 10 (elnode-http-param :fake \"a\"))))
 
 Causes:
 
- (process-get anything :elnode-http-method)
+ (process-get :fake :elnode-http-method)
 
 to always return \"GET\".
 
@@ -109,9 +231,11 @@ key `:buffer' if present and a dummy buffer otherwise.
 
 We return what the BODY returned."
   (declare
-   (debug (sexp &rest form))
+   (debug (sexp sexp &rest form))
    (indent defun))
-  (let ((pvvar (make-symbol "pv"))
+  (let ((predfunc (make-symbol "predfunc"))
+	(get-or-create-buf-func (make-symbol "getorcreatebuffunc"))
+	(pvvar (make-symbol "pv"))
         (pvbuf (make-symbol "buf"))
         (result (make-symbol "result")))
     `(let
@@ -127,59 +251,40 @@ We return what the BODY returned."
           ;; Dummy buffer variable for the process - we fill this in
           ;; dynamically in 'process-buffer
           ,pvbuf)
-       ;; Rebind the process function interface
-       (flet ((process-get (proc key)
-                (gethash key ,pvvar))
-              (process-put (proc key value)
-                (puthash key value ,pvvar))
-              ;; We really need to define a proper fake process
-              (processp (proc)
-               t)
-              (get-or-create-pvbuf
-               (proc &optional specified-buf)
-               (if (bufferp ,pvbuf)
-                   ,pvbuf
-                 (setq ,pvbuf
-                       (if fakir-mock-process-require-specified-buffer
-                           (if (bufferp specified-buf)
-                               specified-buf
-                             nil)
-                         (or specified-buf
-                             (get-buffer-create
-                              (generate-new-buffer-name
-                               "* fakir mock proc buf *")))))
-                 ;; If we've got a buffer value then insert it.
-                 (when (gethash :buffer ,pvvar)
-                   (with-current-buffer ,pvbuf
-                     (insert (gethash :buffer ,pvvar))))
-                 ,pvbuf))
-              (process-send-string
-               (proc str)
-               (with-current-buffer (get-or-create-pvbuf proc)
-                 (save-excursion
-                   (goto-char (point-max))
-                   (insert str))))
-              (process-send-eof
-               (proc)
-               t)
-              (process-contact
-               (proc &optional arg)
-               (list "localhost" 8000))
-              (process-status
-               (proc)
-               'fake)
-              (process-buffer
-               (proc)
-               (get-or-create-pvbuf proc))
-              (set-process-buffer
-               (proc buffer)
-               (get-or-create-pvbuf proc buffer)))
-         (setq ,result (progn ,@body)))
+       (flet ((,predfunc (object) (eq object ,process-symbol))
+	      (,get-or-create-buf-func
+	       (proc &optional specified-buf)
+	       (setq ,pvbuf (fakir--get-or-create-buf
+			     ,pvbuf
+			     ,pvvar
+			     specified-buf))))
+	 ;; Rebind the process function interface
+	 (flet-overrides ,predfunc
+	   ((process-get proc (proc key) (gethash key ,pvvar))
+	    (process-put proc (proc key value) (puthash key value ,pvvar))
+	    (processp proc (proc) t)
+	    (process-send-string
+	     proc (proc str)
+	     (with-current-buffer (,get-or-create-buf-func proc)
+	       (save-excursion
+		 (goto-char (point-max))
+		 (insert str))))
+	    (process-send-eof proc (proc) t)
+	    (process-contact
+	     proc (proc &optional arg)
+	     (list "localhost" 8000))
+	    (process-status proc (proc) 'fake)
+	    (process-buffer proc (proc) (,get-or-create-buf-func proc))
+	    (delete-process proc (proc) t)
+	    (set-process-buffer
+	     proc (proc buffer)
+	     (,get-or-create-buf-func proc buffer)))
+	   (setq ,result (progn ,@body))))
        ;; Now clean up
        (when (bufferp ,pvbuf)
-         (with-current-buffer ,pvbuf
-           (set-buffer-modified-p nil)
-           (kill-buffer ,pvbuf)))
+	 (with-current-buffer ,pvbuf
+	   (set-buffer-modified-p nil)
+	   (kill-buffer ,pvbuf)))
        ;; Now return whatever the body returned
        ,result)))
 
@@ -187,13 +292,14 @@ We return what the BODY returned."
   "A very quick function to test mocking process macro."
   (let ((somevalue 30))
     (fakir-mock-process
-        ((a 20)
-         (:somevar 15)
-         (:othervar somevalue))
-        (let ((z 10))
-          (let ((a "my string!!!"))
-            (setq a (process-get t :somevar))
-            (list a (process-get t :othervar)))))))
+      :fakeproc
+      ((a 20)
+       (:somevar 15)
+       (:othervar somevalue))
+      (let ((z 10))
+	(let ((a "my string!!!"))
+	  (setq a (process-get :fakeproc :somevar))
+	  (list a (process-get :fakeproc :othervar)))))))
 
 (ert-deftest fakir-mock-process ()
   "Test mock process."
