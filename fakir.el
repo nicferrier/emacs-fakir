@@ -263,30 +263,34 @@ We return what the BODY returned."
 	   ((process-get proc (proc key) (gethash key ,pvvar))
 	    (process-put proc (proc key value) (puthash key value ,pvvar))
 	    (processp proc (proc) t)
+	    (process-send-eof proc (proc) t)
+	    (process-status proc (proc) 'fake)
+	    (process-buffer proc (proc) (,get-or-create-buf-func proc))
+	    (process-contact
+	     proc (proc &optional arg)
+	     (list "localhost" 8000))
 	    (process-send-string
 	     proc (proc str)
 	     (with-current-buffer (,get-or-create-buf-func proc)
 	       (save-excursion
 		 (goto-char (point-max))
 		 (insert str))))
-	    (process-send-eof proc (proc) t)
-	    (process-contact
-	     proc (proc &optional arg)
-	     (list "localhost" 8000))
-	    (process-status proc (proc) 'fake)
-	    (process-buffer proc (proc) (,get-or-create-buf-func proc))
-	    (delete-process proc (proc) t)
+	    (delete-process
+	     proc (proc)
+	     (throw
+	      :mock-process-finished :mock-process-finished))
 	    (set-process-buffer
 	     proc (proc buffer)
 	     (,get-or-create-buf-func proc buffer)))
-	   (setq ,result (progn ,@body))))
-       ;; Now clean up
-       (when (bufferp ,pvbuf)
-	 (with-current-buffer ,pvbuf
-	   (set-buffer-modified-p nil)
-	   (kill-buffer ,pvbuf)))
-       ;; Now return whatever the body returned
-       ,result)))
+	   (unwind-protect
+	       (setq ,result
+		     (catch :mock-process-finished
+		       ,@body))
+	     ;; Now clean up
+	     (when (bufferp ,pvbuf)
+	       (with-current-buffer ,pvbuf
+		 (set-buffer-modified-p nil)
+		 (kill-buffer ,pvbuf)))))))))
 
 (defun fakir-test-mock-process ()
   "A very quick function to test mocking process macro."
@@ -302,11 +306,35 @@ We return what the BODY returned."
 	  (list a (process-get :fakeproc :othervar)))))))
 
 (ert-deftest fakir-mock-process ()
-  "Test mock process."
+  "Basic test of the mock process."
   :tags '(unit)
   (let ((x (fakir-test-mock-process)))
     (should (equal '(15 30) x))))
 
+(ert-deftest fakir-mock-process-delete ()
+  "Test the delete handling."
+  :tags '(unit)
+  ;; delete-process causes the body to return :mock-process-finished
+  (should
+   (fakir-mock-process
+     :fakeproc
+     ((a 20)
+      (:somevar "somevar"))
+     (let ((x "a string of text"))
+       (delete-process :fakeproc))))
+  ;; How to use catch inside the BODY to handle delete-process
+  (should
+   (equal
+    "the process finished"
+    (fakir-mock-process
+      :fakeproc
+      ((a 20)
+       (:somevar "somevar"))
+      (let ((x "a string of text"))
+	(when (eq :mock-process-finished
+		  (catch :mock-process-finished
+		    (delete-process :fakeproc)))
+	  "the process finished"))))))
 
 ;; Time utils
 
