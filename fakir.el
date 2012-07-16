@@ -4,7 +4,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 17th March 2012
-;; Version: 0.0.9
+;; Version: 0.0.10
 ;; Keywords: lisp, tools
 
 ;; This file is NOT part of GNU Emacs.
