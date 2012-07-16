@@ -229,7 +229,12 @@ to always return \"GET\".
 `process-buffer' is also remapped, to deliver the value of the
 key `:buffer' if present and a dummy buffer otherwise.
 
-We return what the BODY returned."
+`delete-process' is also remapped, to throw
+`:mock-process-finished' to the catch called
+`:mock-process-finished'.  You can implement your own catch to do
+something with the `delete-process' event.
+
+In normal circumstances, we return what the BODY returned."
   (declare
    (debug (sexp sexp &rest form))
    (indent defun))
