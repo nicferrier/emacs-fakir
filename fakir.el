@@ -372,9 +372,10 @@ In normal circumstances, we return what the BODY returned."
   "Return the fully qualified name of FILE, an `fakir--file'."
   (fakir--file-check file)
   (let* ((fqfn
-          (concat (fakir-file-directory file)
-                  "/"
-                  (fakir-file-filename file))))
+          (concat
+           (file-name-as-directory
+            (fakir-file-directory file))
+           (fakir-file-filename file))))
     fqfn))
 
 (ert-deftest fakir--file-fqn ()
@@ -462,10 +463,12 @@ part."
   ;; http://paste.lisp.org/display/128254
   (let* ((fqfn (if (string-match "^\\(~/\\|/\\).*" file-name)
                    file-name
-                  (concat home-root "/" file-name)))
+                  (concat
+                   (file-name-as-directory home-root) file-name)))
          (file-path (replace-regexp-in-string
                      "^~/\\(.\\)"
-                     (concat home-root "/" "\\1")
+                     (concat
+                      (file-name-as-directory home-root) "\\1")
                      fqfn))
          (path (split-string file-path "/" t))
          res)
