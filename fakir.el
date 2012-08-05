@@ -4,7 +4,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 17th March 2012
-;; Version: 0.0.10
+;; Version: 0.0.11
 ;; Keywords: lisp, tools
 
 ;; This file is NOT part of GNU Emacs.
@@ -455,7 +455,7 @@ part."
     (should (equal nil (fakir--file-home ef2)))))
 
 (defun fakir--file-exists-p (file-name fqfn)
-  (equal fqfn file-name))
+  (equal file-name fqfn))
 
 (defun fakir--expand-file-name (file-name home-root)
   "Simple implementation of .. and ~ handling for FILE-NAME."
