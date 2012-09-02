@@ -4,7 +4,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 17th March 2012
-;; Version: 0.0.11
+;; Version: 0.0.12
 ;; Keywords: lisp, tools
 
 ;; This file is NOT part of GNU Emacs.
@@ -234,6 +234,10 @@ key `:buffer' if present and a dummy buffer otherwise.
 `:mock-process-finished'.  You can implement your own catch to do
 something with the `delete-process' event.
 
+`process-send-string' is also remapped to send to a fake output
+buffer.  The fake buffer can be returned with
+`fakir-get-output-buffer'.
+
 In normal circumstances, we return what the BODY returned."
   (declare
    (debug (sexp sexp &rest form))
@@ -241,6 +245,7 @@ In normal circumstances, we return what the BODY returned."
   (let ((predfunc (make-symbol "predfunc"))
 	(get-or-create-buf-func (make-symbol "getorcreatebuffunc"))
 	(pvvar (make-symbol "pv"))
+        (pvoutbuf (make-symbol "pvoutbuf"))
         (pvbuf (make-symbol "buf"))
         (result (make-symbol "result")))
     `(let
@@ -251,6 +256,11 @@ In normal circumstances, we return what the BODY returned."
                          (if (and p (listp p))
                              (list 'list `(quote ,(car p)) (cadr p))
                              (list 'cons `,p nil))))))
+          ;; This is a buffer for the output
+          (,pvoutbuf (progn
+                       (and (get-buffer "*fakir-outbuf*")
+                            (kill-buffer "*fakir-outbuf*"))
+                       (get-buffer-create "*fakir-outbuf*")))
           ;; For assigning the result of the body
           ,result
           ;; Dummy buffer variable for the process - we fill this in
@@ -273,10 +283,10 @@ In normal circumstances, we return what the BODY returned."
 	    (process-buffer proc (proc) (,get-or-create-buf-func proc))
 	    (process-contact
 	     proc (proc &optional arg)
-	     (list "localhost" 8000))
+	     (list "localhost" 8000)) ; FIXME - elnode specific
 	    (process-send-string
 	     proc (proc str)
-	     (with-current-buffer (,get-or-create-buf-func proc)
+	     (with-current-buffer ,pvoutbuf
 	       (save-excursion
 		 (goto-char (point-max))
 		 (insert str))))
@@ -287,10 +297,11 @@ In normal circumstances, we return what the BODY returned."
 	    (set-process-buffer
 	     proc (proc buffer)
 	     (,get-or-create-buf-func proc buffer)))
-	   (unwind-protect
-	       (setq ,result
-		     (catch :mock-process-finished
-		       ,@body))
+           (flet ((fakir-get-output-buffer () ,pvoutbuf))
+             (unwind-protect
+                  (setq ,result
+                        (catch :mock-process-finished
+                          ,@body)))
 	     ;; Now clean up
 	     (when (bufferp ,pvbuf)
 	       (with-current-buffer ,pvbuf
@@ -360,7 +371,16 @@ In normal circumstances, we return what the BODY returned."
   (mtime "Mon, Feb 27 2012 22:10:19 GMT"))
 
 (defun fakir-file (&rest args)
-  "Make a fakir-file, a struct."
+  "Make a fakir-file, a struct.
+
+:FILENAME is the basename of the file
+
+:DIRECTORY is the dirname of the file
+
+:CONTENT is a string of content for the file
+
+:MTIME is the modified time, with a default around the time fakir
+was written."
   (apply 'make-fakir-file args))
 
 (defun fakir--file-check (file)
