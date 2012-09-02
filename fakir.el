@@ -4,7 +4,7 @@
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Created: 17th March 2012
-;; Version: 0.0.12
+;; Version: 0.0.14
 ;; Keywords: lisp, tools
 
 ;; This file is NOT part of GNU Emacs.
@@ -301,21 +301,21 @@ In normal circumstances, we return what the BODY returned."
              (unwind-protect
                   (setq ,result
                         (catch :mock-process-finished
-                          ,@body)))
-	     ;; Now clean up
-	     (when (bufferp ,pvbuf)
-	       (with-current-buffer ,pvbuf
-		 (set-buffer-modified-p nil)
-		 (kill-buffer ,pvbuf)))))))))
+                          ,@body))
+               ;; Now clean up
+               (when (bufferp ,pvbuf)
+                 (with-current-buffer ,pvbuf
+                   (set-buffer-modified-p nil)
+                   (kill-buffer ,pvbuf))))))))))
 
 (defun fakir-test-mock-process ()
   "A very quick function to test mocking process macro."
   (let ((somevalue 30))
     (fakir-mock-process
-      :fakeproc
-      ((a 20)
-       (:somevar 15)
-       (:othervar somevalue))
+        :fakeproc
+        ((a 20)
+         (:somevar 15)
+         (:othervar somevalue))
       (let ((z 10))
 	(let ((a "my string!!!"))
 	  (setq a (process-get :fakeproc :somevar))
@@ -325,7 +325,9 @@ In normal circumstances, we return what the BODY returned."
   "Basic test of the mock process."
   :tags '(unit)
   (let ((x (fakir-test-mock-process)))
-    (should (equal '(15 30) x))))
+    (should (equal
+             '(15 30)
+             x))))
 
 (ert-deftest fakir-mock-process-delete ()
   "Test the delete handling."
