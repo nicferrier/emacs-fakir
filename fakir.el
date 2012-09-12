@@ -81,35 +81,36 @@ that operate on a particular type, processes for example:
     ...)
 
 \(fn PREDICATE ((FUNC TEST-ARG ARGLIST BODY...) ...) FORM...)"
-  (declare (indent defun))
+  (declare (debug (sexp sexp &rest form))
+           (indent defun))
   (let*
       ((flets
-	(loop
-	 for i in bindings
-	 collect
-	 (destructuring-bind (name test-arg args &rest body) i
-	   (let ((saved-func-namev (make-symbol "saved-func-name")))
-	     (let ((saved-func-namev
-		    (intern (format "saved-func-%s"
-				    (symbol-name name)))))
-	       `(,name ,args
-		       (if (not (,predicate ,test-arg))
-			   (funcall ,saved-func-namev ,@args)
-			 ,@body)))))))
+        (loop
+         for i in bindings
+         collect
+         (destructuring-bind (name test-arg args &rest body) i
+           (let ((saved-func-namev (make-symbol "saved-func-name")))
+             (let ((saved-func-namev
+                    (intern (format "saved-func-%s"
+                                    (symbol-name name)))))
+               `(,name ,args
+                       (if (not (,predicate ,test-arg))
+                           (funcall ,saved-func-namev ,@args)
+                         ,@body)))))))
        (lets
-	(loop
-	 for i in bindings
-	 collect
-	 (destructuring-bind (name test-arg args &rest body) i
-	   (let ((saved-func-namev (make-symbol "saved-func-name")))
-	     (let ((saved-func-namev
-		    (intern (format "saved-func-%s"
-				    (symbol-name name)))))
-	       `(,saved-func-namev
-		 (symbol-function (quote ,name)))))))))
+        (loop
+         for i in bindings
+         collect
+         (destructuring-bind (name test-arg args &rest body) i
+           (let ((saved-func-namev (make-symbol "saved-func-name")))
+             (let ((saved-func-namev
+                    (intern (format "saved-func-%s"
+                                    (symbol-name name)))))
+               `(,saved-func-namev
+                 (symbol-function (quote ,name)))))))))
     `(let ,lets
        (flet ,flets
-	 ,@form))))
+         ,@form))))
 
 (ert-deftest flet-overrides ()
   "Test the flet-override stuff."
