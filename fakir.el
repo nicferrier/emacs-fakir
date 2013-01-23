@@ -40,8 +40,8 @@
 ;;
 ;; This is an collection of tools to make testing Emacs core functions
 ;; easier.
-;;
-;; Code:
+
+;;; Code:
 
 (require 'ert)
 (eval-when-compile (require 'cl))
