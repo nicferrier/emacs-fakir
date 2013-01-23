@@ -3,8 +3,9 @@
 
 ;; Author: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
+;; URL: http://github.com/nicferrier/emacs-fakir
 ;; Created: 17th March 2012
-;; Version: 0.0.14
+;; Version: 0.0.15
 ;; Keywords: lisp, tools
 
 ;; This file is NOT part of GNU Emacs.
@@ -22,11 +23,6 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;;; Commentary:
-;;
-;; This is an collection of tools to make testing Emacs core functions
-;; easier.
-;;
 ;;; Source code
 ;;
 ;; fakir's code can be found here:
@@ -40,8 +36,12 @@
 ;;
 ;; for private functions and macros.
 
-
-;;; Code:
+;;; Commentary:
+;;
+;; This is an collection of tools to make testing Emacs core functions
+;; easier.
+;;
+;; Code:
 
 (require 'ert)
 (eval-when-compile (require 'cl))
@@ -115,28 +115,28 @@ that operate on a particular type, processes for example:
 (ert-deftest flet-overrides ()
   "Test the flet-override stuff."
   (flet ((my-test (x)
-		  (and
-		   (listp x)
-		   (let ((v (car x)))
-		     (eq :object v))))
-	 (my-func (x y)
-		  (format "strings: %s %s" x y))
-	 (my-proc (z)
-		  (* 2 x)))
+                  (and
+                   (listp x)
+                   (let ((v (car x)))
+                     (eq :object v))))
+         (my-func (x y)
+                  (format "strings: %s %s" x y))
+         (my-proc (z)
+                  (* 2 x)))
     (flet-overrides
       my-test ; the type predicate we'll use
       ((my-func a (a b)
-		(+ (cadr a) b))
+                (+ (cadr a) b))
        (my-proc y (x y)
-		(+ 10 y)))
+                (+ 10 y)))
       (should
        (equal
-	'("strings: nic caroline" 7)
-	(list
-	 ;; This call doesn't match the predicate
-	 (my-func "nic" "caroline")
-	 ;; This call does match the predicate
-	 (my-func '(:object 5) 2)))))))
+        '("strings: nic caroline" 7)
+        (list
+         ;; This call doesn't match the predicate
+         (my-func "nic" "caroline")
+         ;; This call does match the predicate
+         (my-func '(:object 5) 2)))))))
 
 
 ;; Mocking processes
@@ -225,7 +225,7 @@ Causes:
 
 to always return \"GET\".
 
-`process-put' is also remapped, currently to swallow any setting.
+`process-put' is also remapped, to set any setting.
 
 `process-buffer' is also remapped, to deliver the value of the
 key `:buffer' if present and a dummy buffer otherwise.
