@@ -5,7 +5,7 @@
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; URL: http://github.com/nicferrier/emacs-fakir
 ;; Created: 17th March 2012
-;; Version: 0.0.16
+;; Version: 0.0.17
 ;; Keywords: lisp, tools
 
 ;; This file is NOT part of GNU Emacs.
@@ -372,10 +372,12 @@ part."
   "Simple implementation of .. and ~ handling for FILE-NAME."
   ;; tali713 recomended this as a replacement here
   ;; http://paste.lisp.org/display/128254
-  (let* ((fqfn (if (string-match "^\\(~/\\|/\\).*" file-name)
-                   file-name
-                  (concat
-                   (file-name-as-directory home-root) file-name)))
+  (let* ((fqfn
+          (if (string-match "^\\(~/\\|/\\).*" file-name)
+              file-name
+              ;; Else it's both
+              (concat
+               (file-name-as-directory home-root) file-name)))
          (file-path (replace-regexp-in-string
                      "^~/\\(.\\)"
                      (concat
@@ -437,6 +439,9 @@ will be added as necessary."
                 file-name
                 (or def-dir home-root)))
               (insert-file-contents
+                  (file-name)
+                (insert (fakir-file-content ,fv)))
+              (insert-file-contents-literally
                   (file-name)
                 (insert (fakir-file-content ,fv)))
               (find-file
