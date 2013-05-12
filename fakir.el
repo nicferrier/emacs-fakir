@@ -331,6 +331,14 @@ was written."
            (fakir-file-filename file))))
     fqfn))
 
+(defun fakir--file-rename (src-file to-file-name)
+  "Rename the `fakir-file' SRC-FILE."
+  (fakir--file-check src-file)
+  (let ((base-file-name (file-name-nondirectory to-file-name))
+        (file-dir (file-name-directory to-file-name)))
+    (setf (fakir-file-directory src-file) file-dir)
+    (setf (fakir-file-filename src-file) base-file-name)))
+
 (defun fakir--file-mod-time (file &optional raw)
   "Return the encoded mtime of FILE, an `fakir--file'.
 
@@ -438,6 +446,8 @@ will be added as necessary."
                (fakir--expand-file-name
                 file-name
                 (or def-dir home-root)))
+              (rename-file (from to) ; what about ok-if-already-exists
+                (fakir--file-rename ,fv to))
               (insert-file-contents
                   (file-name)
                 (insert (fakir-file-content ,fv)))
