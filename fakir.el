@@ -7,6 +7,7 @@
 ;; Created: 17th March 2012
 ;; Version: 0.1.0
 ;; Keywords: lisp, tools
+;; Package-Requires: ((noflet "0.0.1"))
 
 ;; This file is NOT part of GNU Emacs.
 
