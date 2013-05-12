@@ -503,9 +503,7 @@ clause to `this-fakir-file'."
             (funcall this-fun file-name))))
       ,@body)))
 
-(defmacro fakir-mock-file (faked-file &rest body)
-  "Alias for `fakir-fake-file'."
-  `(fakir-fake-file ,faked-file ,@body))
+(defalias 'fakir-mock-file 'fakir-fake-file)
 
 (provide 'fakir)
 
