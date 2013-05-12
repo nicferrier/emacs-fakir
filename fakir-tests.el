@@ -123,39 +123,30 @@
   "Test expanding names to absolutes."
   (should
    (equal
-    (fakir--expand-file-name
-     "blah"
-     "/home/emacsuser")
+    (fakir--expand-file-name "blah" "/home/emacsuser")
     "/home/emacsuser/blah"))
   (should
    (equal
     (fakir--expand-file-name
-     "/home/emacsuser/bladh/qdqnwd/qwdqdq.1"
-     "/home/emacsuser")
+     "/home/emacsuser/bladh/qdqnwd/qwdqdq.1" "/home/emacsuser")
     "/home/emacsuser/bladh/qdqnwd/qwdqdq.1"))
   (should
    (equal
     (fakir--expand-file-name
-     "/home/emacsuser/bladh/../qwdqdq.2"
-     "/home/emacsuser")
+     "/home/emacsuser/bladh/../qwdqdq.2" "/home/emacsuser")
     "/home/emacsuser/qwdqdq.2"))
   (should
    (equal
-    (fakir--expand-file-name
-     "qwdqdq.3"
-     "/home")
+    (fakir--expand-file-name "qwdqdq.3" "/home")
     "/home/qwdqdq.3"))
   (should
    (equal
-    (fakir--expand-file-name
-     "/qwdqdq.4"
-     "/home")
+    (fakir--expand-file-name "/qwdqdq.4" "/home")
     "/qwdqdq.4"))
   (should
    (equal
     (fakir--expand-file-name
-     "/home/emacsuser/bladh/../../../../../../qwdqdq.5"
-     "/home")
+     "/home/emacsuser/bladh/../../../../../../qwdqdq.5" "/home")
     "/qwdqdq.5")))
 
 (ert-deftest fakir--find-file ()
@@ -172,27 +163,28 @@
 
 (ert-deftest fakir-mock-file ()
   "Test the mock file macro."
-  (fakir-mock-file (make-fakir-file
+  (let ((fakir--home-root "/home/test"))
+    (fakir-mock-file (make-fakir-file
                       :filename "somefile"
                       :directory "/home/test"
                       :content "This is a file."
                       :mtime "Mon, Feb 27 2012 22:10:21 GMT")
-    (let ((buf (find-file "/home/test/somefile")))
-      (unwind-protect
-          (with-current-buffer buf
-            (should
-             (equal "This is a file."
-                    (buffer-substring (point-min) (point-max)))))
-        (kill-buffer buf)))
-    (should (file-exists-p "/home/test/somefile"))
-    (should-not (file-exists-p "/home/test/otherfile"))
-    (should-not (file-exists-p "/home/dir/somefile"))
-    (should (equal
-             (expand-file-name "~/somefile")
-             "/home/test/somefile"))
-    (should (equal
-             '(20299 65357)
-             (elt (file-attributes "/home/test/somefile") 5)))))
+      (let ((buf (find-file "/home/test/somefile")))
+        (unwind-protect
+             (with-current-buffer buf
+               (should
+                (equal "This is a file."
+                       (buffer-substring (point-min) (point-max)))))
+          (kill-buffer buf)))
+      (should (file-exists-p "/home/test/somefile"))
+      (should-not (file-exists-p "/home/test/otherfile"))
+      (should-not (file-exists-p "/home/dir/somefile"))
+      (should (equal
+               (expand-file-name "~/somefile")
+               "/home/test/somefile"))
+      (should (equal
+               '(20299 65357)
+               (elt (file-attributes "/home/test/somefile") 5))))))
 
 (ert-deftest fakir-fake-file/insert-file-contents ()
   (fakir-fake-file
@@ -213,7 +205,7 @@
   (fakir-fake-file
    (fakir-file
     :filename "blah"
-    :directory "/tmp"
+    :directory "/home/nferrier"
     :content "blah!")
    (let ((real-home-dir (file-name-as-directory (getenv "HOME"))))
      (should

@@ -384,27 +384,38 @@ part."
     (fakir-file-directory faked-file))
    (fakir-file-filename faked-file)))
 
-(defun fakir--expand-file-name (file-name home-root)
-  "Simple implementation of .. and ~ handling for FILE-NAME."
+(defvar fakir--home-root "/home/fakir"
+  "String to use as the home-root.")
+
+(defun fakir--join (file-name &optional dir)
+  "Join FILE-NAME to DIR or `fakir--home-root'."
+  (concat
+   (file-name-as-directory (or dir fakir--home-root))
+   file-name))
+
+(defun fakir--expand-file-name (file-name dir)
+  "Implementation of ~ and .. handling for FILE-NAME."
   (let* ((fqfn
           (if (string-match "^\\(~/\\|/\\).*" file-name)
               file-name
               ;; Else it's both
-              (concat ; replace this with fakir--file-path?
-               (file-name-as-directory home-root) file-name)))
-         (file-path (replace-regexp-in-string
-                     "^~/\\(.\\)"
-                     (concat
-                      (file-name-as-directory home-root) "\\1")
-                     fqfn))
-         (path (split-string file-path "/" t))
+              (fakir--join file-name dir)))
+         (file-path
+          ;; Replace ~/ with the home-root
+          (replace-regexp-in-string
+           "^~/\\(.*\\)"
+           (lambda (m) (fakir--join (match-string 1 m)))
+           fqfn))
+         (path-lst (split-string file-path "/" t))
          res)
-    (while path
-      (if (string= ".." (car path))
+    (while path-lst
+      (if (string= ".." (car path-lst))
           (setq res (cdr res))
-        (setq res
-              (cons (car path) (if (consp res) res))))
-      (setq path (cdr path)))
+          ;; Else 
+          (setq res
+                (cons (car path-lst)
+                      (if (consp res) res))))
+      (setq path-lst (cdr path-lst)))
     (concat
      (when (equal ?\/ (elt file-path 0)) "/")
      (mapconcat 'identity (reverse res) "/"))))
