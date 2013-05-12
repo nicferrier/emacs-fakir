@@ -373,10 +373,6 @@ part."
               (match-string 1 fqn)))))
     home-root))
 
-(defun fakir--file-exists-p (file-name fqfn)
-  (equal file-name fqfn))
-
-
 (defun fakir--file-path (faked-file)
   "Make a path name from the FAKED-FILE."
   (concat
@@ -533,7 +529,7 @@ clause to `this-fakir-file'."
             (funcall this-fn file-name)))
        (file-exists-p (file-name)
           (fakir--file-cond file-name
-            (fakir--file-exists-p file-name fqfn) ; what
+            t
             (funcall this-fn file-name)))
        (rename-file (from to)
           (fakir--file-cond from
