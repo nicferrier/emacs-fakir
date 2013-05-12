@@ -376,15 +376,21 @@ part."
 (defun fakir--file-exists-p (file-name fqfn)
   (equal file-name fqfn))
 
+
+(defun fakir--file-path (faked-file)
+  "Make a path name from the FAKED-FILE."
+  (concat
+   (file-name-as-directory
+    (fakir-file-directory faked-file))
+   (fakir-file-filename faked-file)))
+
 (defun fakir--expand-file-name (file-name home-root)
   "Simple implementation of .. and ~ handling for FILE-NAME."
-  ;; tali713 recomended this as a replacement here
-  ;; http://paste.lisp.org/display/128254
   (let* ((fqfn
           (if (string-match "^\\(~/\\|/\\).*" file-name)
               file-name
               ;; Else it's both
-              (concat
+              (concat ; replace this with fakir--file-path?
                (file-name-as-directory home-root) file-name)))
          (file-path (replace-regexp-in-string
                      "^~/\\(.\\)"
