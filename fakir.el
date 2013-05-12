@@ -417,6 +417,7 @@ part."
      (mapconcat 'identity (reverse res) "/"))))
 
 (defun fakir--find-file (fakir-file)
+  "`find-file' implementation for FAKIR-FILE."
   (let ((buf (get-buffer-create (fakir-file-filename fakir-file))))
     (with-current-buffer buf
       (insert (fakir-file-content fakir-file)))
