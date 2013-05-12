@@ -5,7 +5,7 @@
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; URL: http://github.com/nicferrier/emacs-fakir
 ;; Created: 17th March 2012
-;; Version: 0.0.17
+;; Version: 0.1.0
 ;; Keywords: lisp, tools
 
 ;; This file is NOT part of GNU Emacs.
