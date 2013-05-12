@@ -1,5 +1,16 @@
+= Fakir =
+
 This is a bunch of functions to mock core Emacs Lisp objects for
 testing purposes.
+
+These are the two things most difficult to mock in Emacs currently.
+
+We use the variations on the {{{noflet}}} macro to override a lot of
+Emacs API functions to understand mocked data types.
+
+== API ==
+
+Here's the API currently.
 
 === fakir-file &rest args ===
 
@@ -70,4 +81,11 @@ A very quick function to test mocking process macro.
 
 Encode the //time-str// as an EmacsLisp time.
 
+
+
+== TODO ==
+
+* currenly the process functions do not use {{{noflet}}}, they need to be re-written 
+** {{{flet-overrides}}} could be thrown away then
+* we need multiple file support
 
