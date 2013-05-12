@@ -164,7 +164,7 @@
 (ert-deftest fakir-mock-file ()
   "Test the mock file macro."
   (let ((fakir--home-root "/home/test"))
-    (fakir-mock-file (make-fakir-file
+    (fakir-mock-file (fakir-file
                       :filename "somefile"
                       :directory "/home/test"
                       :content "This is a file."
