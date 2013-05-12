@@ -219,7 +219,7 @@
      (should
       (equal
        (expand-file-name "~/blah")
-       "/home/nferrier/blah"))
+       (concat real-home-dir "blah")))
      ;; Use a real one
      (should
       (equal
