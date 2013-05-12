@@ -415,6 +415,11 @@ part."
       (insert (fakir-file-content fakir-file)))
     buf))
 
+(defun fakir-file-path (fakir-file)
+  "Make the path for FAKIR-FILE."
+  (concat (fakir-file-directory fakir-file)
+          (fakir-file-filename fakir-file)))
+
 (defmacro fakir-mock-file (fakir-file &rest body)
   "Mock the filesystem with the FAKIR-FILE object.
 
