@@ -519,10 +519,11 @@ clause to `this-fakir-file'."
           (fakir--namespace ,faked-file)))
      (noflet
       ((expand-file-name (file-name &optional dir)
-          (fakir--file-cond
-              file-name
-            (fakir--expand-file-name file-name)
-            (funcall this-fn file-name dir)))
+          (let ((expanded
+                 (fakir--expand-file-name file-name dir)))
+            (fakir--file-cond expanded
+              expanded
+              (funcall this-fn file-name dir))))
        (file-attributes (file-name)
           (fakir--file-cond file-name
             (fakir--file-attribs this-fakir-file)
