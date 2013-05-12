@@ -84,6 +84,7 @@
              :directory "/home/dir")))
     (should (equal "/home/dir/somefile"
                    (fakir--file-fqn ef)))))
+
 (ert-deftest fakir--file-mod-time ()
   "Test that file mtimes are encoded properly."
   (let ((ef (make-fakir-file
@@ -192,5 +193,37 @@
     (should (equal
              '(20299 65357)
              (elt (file-attributes "/home/test/somefile") 5)))))
+
+(ert-deftest fakir-fake-file/insert-file-contents ()
+  (fakir-fake-file
+   (fakir-file
+    :filename "blah"
+    :directory "/tmp"
+    :content "blah!")
+   (should
+    (equal
+     (with-temp-buffer
+       (insert-file-contents "/tmp/blah")
+       (buffer-string))
+     "blah!"))
+   ;; We should do another test with a real file - this one?
+   ))
+
+(ert-deftest fakir-fake-file/expand-file-name ()
+  (fakir-fake-file
+   (fakir-file
+    :filename "blah"
+    :directory "/tmp"
+    :content "blah!")
+   (let ((real-home-dir (file-name-as-directory (getenv "HOME"))))
+     (should
+      (equal
+       (expand-file-name "~/blah")
+       "/home/nferrier/blah"))
+     ;; Use a real one
+     (should
+      (equal
+       (expand-file-name "~/.emacs.d")
+       (concat real-home-dir ".emacs.d"))))))
 
 ;;; fakir-tests.el ends here
