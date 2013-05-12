@@ -473,6 +473,79 @@ will be added as necessary."
                (fakir--find-file ,fv)))
          ,@body))))
 
+(defun fakir--namespace (faked-file &rest other-files)
+  "Make a namespace with FAKED-FILE in it.
+
+If OTHER-FILES are specified they are added to."
+  (let ((ns (make-hash-table :test 'equal)))
+    (puthash
+     (fakir--file-path faked-file) faked-file ns)
+    (loop for f in other-files
+       do (puthash
+           (fakir--file-path f) f ns))
+    ns))
+
+(defvar fakir-file-namespace nil
+  "Namespace used by `fakir--file-cond'.")
+
+(defmacro fakir--file-cond (file-name then &rest else)
+  "Do THEN or ELSE if FILE-NAME is a faked file.
+
+Uses the `fakir-file-namepsace' to detect that.
+
+The `fakir-file' for the FILE-NAME is locally bound in the THEN
+clause to `this-fakir-file'."
+  (declare (indent 1))
+  (let ((file-name-v (make-symbol "file-namev"))
+        (found-file (make-symbol "ff")))
+    `(let* ((,file-name-v ,file-name)
+            (,found-file
+             (gethash ,file-name-v fakir-file-namespace)))
+       (if (fakir-file-p ,found-file)
+           (let ((this-fakir-file ,found-file))
+             ,then)
+           ,@else))))
+
+(defmacro fakir-fake-file (faked-file &rest body)
+  "Fake FAKED-FILE and evaluate BODY."
+  `(let ((fakir-file-namespace
+          (fakir--namespace ,faked-file)))
+     (noflet
+      ((expand-file-name (file-name &optional dir)
+          (fakir--file-cond
+              file-name
+            (fakir--expand-file-name file-name)
+            (funcall this-fn file-name dir)))
+       (file-attributes (file-name)
+          (fakir--file-cond file-name
+            (fakir--file-attribs this-fakir-file)
+            (funcall this-fn file-name)))
+       (file-exists-p (file-name)
+          (fakir--file-cond file-name
+            (fakir--file-exists-p file-name fqfn) ; what
+            (funcall this-fn file-name)))
+       (rename-file (from to)
+          (fakir--file-cond from
+            (fakir--file-rename this-fakir-file to)
+            (funcall this-fn from to)))
+       (insert-file-contents (file-name)
+          (fakir--file-cond file-name
+            (insert (fakir-file-content this-fakir-file))
+            (funcall this-fn file-name)))
+       (insert-file-contents-literally (file-name)
+          (fakir--file-cond file-name
+            (insert (fakir-file-content this-fakir-file))
+            (funcall this-fn file-name)))
+       (find-file (file-name)
+          (fakir--file-cond file-name
+            (fakir--find-file this-fakir-file)
+            (funcall this-fun file-name)))
+       (find-file-noselect (file-name)
+          (fakir--file-cond file-name
+            (fakir--find-file this-fakir-file)
+            (funcall this-fun file-name))))
+      ,@body)))
+
 (provide 'fakir)
-;
+
 ;;; fakir.el ends here
