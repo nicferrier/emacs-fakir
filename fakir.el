@@ -503,6 +503,51 @@ clause to `this-fakir-file'."
             (funcall this-fun file-name))))
       ,@body)))
 
+(defmacro fakir-fake-file* (faked-files &rest body)
+  "Fake FAKED-FILES and evaluate BODY.
+
+FAKED-FILES must be a list of `fakir-file' objects to be faked."
+  (let ((ffv (make-symbol "fflist")))
+    `(let* ((,ffv ,faked-files)
+            (fakir-file-namespace
+             (apply 'fakir--namespace ,ffv)))
+       (noflet
+        ((expand-file-name (file-name &optional dir)
+                           (let ((expanded
+                                  (fakir--expand-file-name file-name dir)))
+                             (fakir--file-cond expanded
+                               expanded
+                               (funcall this-fn file-name dir))))
+         (file-attributes (file-name)
+                          (fakir--file-cond file-name
+                            (fakir--file-attribs this-fakir-file)
+                            (funcall this-fn file-name)))
+         (file-exists-p (file-name)
+                        (fakir--file-cond file-name
+                          t
+                          (funcall this-fn file-name)))
+         (rename-file (from to)
+                      (fakir--file-cond from
+                        (fakir--file-rename this-fakir-file to)
+                        (funcall this-fn from to)))
+         (insert-file-contents (file-name)
+                               (fakir--file-cond file-name
+                                 (insert (fakir-file-content this-fakir-file))
+                                 (funcall this-fn file-name)))
+         (insert-file-contents-literally (file-name)
+                                         (fakir--file-cond file-name
+                                           (insert (fakir-file-content this-fakir-file))
+                                           (funcall this-fn file-name)))
+         (find-file (file-name)
+                    (fakir--file-cond file-name
+                      (fakir--find-file this-fakir-file)
+                      (funcall this-fun file-name)))
+         (find-file-noselect (file-name)
+                             (fakir--file-cond file-name
+                               (fakir--find-file this-fakir-file)
+                               (funcall this-fun file-name))))
+        ,@body))))
+
 (defalias 'fakir-mock-file 'fakir-fake-file)
 
 (provide 'fakir)

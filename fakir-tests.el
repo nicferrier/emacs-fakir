@@ -220,4 +220,31 @@
          (expand-file-name "~/.emacs.d")
          (concat real-home-dir ".emacs.d")))))))
 
+(ert-deftest fakir-fake-file*/expand-file-name ()
+  (let ((fakir--home-root "/home/fakir-test"))
+    (fakir-fake-file*
+     (list
+      (fakir-file
+       :filename "blah"
+       :directory "/home/fakir-test"
+       :content "blah!")
+      (fakir-file
+       :filename "blah2"
+       :directory "/home/fakir-test"
+       :content "blah2!")
+      (fakir-file
+       :filename "blah3"
+       :directory "/home/fakir-test"
+       :content "NO WAY!"))
+     (let ((real-home-dir
+            (file-name-as-directory (getenv "HOME"))))
+       (should
+        (equal
+         (expand-file-name "~/blah")
+         "/home/fakir-test/blah"))
+       (should
+        (equal
+         (expand-file-name "~/blah2")
+         "/home/fakir-test/blah2"))))))
+
 ;;; fakir-tests.el ends here
