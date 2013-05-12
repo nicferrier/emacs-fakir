@@ -427,59 +427,6 @@ part."
   (concat (fakir-file-directory fakir-file)
           (fakir-file-filename fakir-file)))
 
-(defmacro fakir-mock-file (fakir-file &rest body)
-  "Mock the filesystem with the FAKIR-FILE object.
-
-The Emacs Lisp file operations are flet'd so that they operate on
-the FAKIR-FILE.
-
-For example:
-
- (fakir-mock-file (fakir-file
-                     :filename \"README\"
-                     :directory \"/home/emacs/fakir\")
-    (expand-file-name \"~/fakir/README\"))
-
- => \"/home/emacs/fakir/README\"
-
-The operations that are supported by the fleted functions are:
-`file-attributes', `file-exists-p' and `expand-file-name'. Others
-will be added as necessary."
-  (declare (debug (sexp &rest form))
-           (indent 1))
-  (let ((fv (make-symbol "fakir-filev")))
-    `(let*
-         ((,fv ,fakir-file)
-          (fqfn (fakir--file-fqn ,fv))
-          (home-root (fakir--file-home ,fv))
-          (default-directory home-root))
-       (flet ((file-attributes
-               (file-name)
-               (fakir--file-attribs ,fv))
-              (file-exists-p
-               (file-name)
-               (fakir--file-exists-p file-name fqfn))
-              (expand-file-name
-               (file-name &optional def-dir)
-               (fakir--expand-file-name
-                file-name
-                (or def-dir home-root)))
-              (rename-file (from to) ; what about ok-if-already-exists
-                (fakir--file-rename ,fv to))
-              (insert-file-contents
-                  (file-name)
-                (insert (fakir-file-content ,fv)))
-              (insert-file-contents-literally
-                  (file-name)
-                (insert (fakir-file-content ,fv)))
-              (find-file
-               (file-name)
-               (fakir--find-file ,fv))
-              (find-file-noselect
-               (file-name)
-               (fakir--find-file ,fv)))
-         ,@body))))
-
 (defun fakir--namespace (faked-file &rest other-files)
   "Make a namespace with FAKED-FILE in it.
 
@@ -553,6 +500,10 @@ clause to `this-fakir-file'."
             (fakir--find-file this-fakir-file)
             (funcall this-fun file-name))))
       ,@body)))
+
+(defmacro fakir-mock-file (faked-file &rest body)
+  "Alias for `fakir-fake-file'."
+  `(fakir-fake-file ,faked-file ,@body))
 
 (provide 'fakir)
 
