@@ -161,6 +161,32 @@
                     (buffer-substring (point-min) (point-max)))))
         (kill-buffer buf)))))
 
+(ert-deftest fakir--write-region ()
+  "Test writing fake stuff."
+  (let ((fl 
+         (fakir-file :filename "nic" :directory "/tmp/"
+                     :content "blah")))
+    ;; Overwrite the faked content
+    (should
+     (equal
+      (progn
+        (with-temp-buffer
+          (insert "hello world!")
+          (fakir--write-region
+           fl (point-min) (point-max) "/tmp/nic"))
+        (fakir-file-content fl))
+      "hello world!"))
+    ;; Append the faked content
+    (should
+     (equal
+      (progn
+        (with-temp-buffer
+          (insert " says the computer")
+          (fakir--write-region
+           fl (point-min) (point-max) "/tmp/nic" t))
+        (fakir-file-content fl))
+      "hello world! says the computer"))))
+
 (ert-deftest fakir-mock-file ()
   "Test the mock file macro."
   (let ((fakir--home-root "/home/test"))

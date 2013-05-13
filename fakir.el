@@ -462,6 +462,20 @@ clause to `this-fakir-file'."
              ,then)
            ,@else))))
 
+(defun fakir--write-region (fakir-file start end file-name
+                            &optional append visit lockname mustbenew)
+  "Fake `write-region' function to write to FAKIR-FILE.
+
+`fakir-fake-file' does not call this unless the FILE-NAME exists
+as a declared fake-file.  Thus you cannot use this to save files
+you have not explicitly declared as fake."
+  (setf
+   (fakir-file-content fakir-file)
+   (if append
+       (concat (fakir-file-content fakir-file)
+               (buffer-substring start end))
+       (buffer-substring start end))))
+
 (defmacro fakir-fake-file (faked-file &rest body)
   "Fake FAKED-FILE and evaluate BODY."
   `(let ((fakir-file-namespace
@@ -481,6 +495,12 @@ clause to `this-fakir-file'."
           (fakir--file-cond file-name
             t
             (funcall this-fn file-name)))
+       (write-region (start end file-name &optional append visit lockname mustbenew)
+          (fakir--file-cond file-name
+            (fakir--write-region
+             this-fakir-file ; the faked file - should match file-name
+             start end file-name append visit mustbenew)
+            (funcall this-fn start end file-name append visit mustbenew)))
        (rename-file (from to)
           (fakir--file-cond from
             (fakir--file-rename this-fakir-file to)
@@ -528,6 +548,12 @@ FAKED-FILES must be a list of `fakir-file' objects to be faked."
                         (fakir--file-cond file-name
                           t
                           (funcall this-fn file-name)))
+         (write-region (start end file-name &optional append visit lockname mustbenew)
+                       (fakir--file-cond file-name
+                         (fakir--write-region
+                          this-fakir-file ; the faked file - should match file-name
+                          start end file-name append visit mustbenew)
+                         (funcall this-fn start end file-name append visit mustbenew)))
          (rename-file (from to)
                       (fakir--file-cond from
                         (fakir--file-rename this-fakir-file to)
