@@ -469,12 +469,16 @@ clause to `this-fakir-file'."
 `fakir-fake-file' does not call this unless the FILE-NAME exists
 as a declared fake-file.  Thus you cannot use this to save files
 you have not explicitly declared as fake."
-  (setf
-   (fakir-file-content fakir-file)
-   (if append
-       (concat (fakir-file-content fakir-file)
-               (buffer-substring start end))
-       (buffer-substring start end))))
+  (let ((to-write
+         (cond
+           ((equal start nil) (buffer-string))
+           ((stringp start) start)
+           (t (buffer-substring start end)))))
+    (setf
+     (fakir-file-content fakir-file)
+     (if append
+         (concat (fakir-file-content fakir-file) to-write)
+         to-write))))
 
 (defmacro fakir-fake-file (faked-file &rest body)
   "Fake FAKED-FILE and evaluate BODY."
