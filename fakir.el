@@ -485,11 +485,13 @@ clause to `this-fakir-file'."
           (fakir--file-cond from
             (fakir--file-rename this-fakir-file to)
             (funcall this-fn from to)))
-       (insert-file-contents (file-name)
+       (insert-file-contents
+        (file-name &optional visit beg end replace)
           (fakir--file-cond file-name
             (insert (fakir-file-content this-fakir-file))
             (funcall this-fn file-name)))
-       (insert-file-contents-literally (file-name)
+       (insert-file-contents-literally
+        (file-name &optional visit beg end replace)
           (fakir--file-cond file-name
             (insert (fakir-file-content this-fakir-file))
             (funcall this-fn file-name)))
@@ -530,14 +532,16 @@ FAKED-FILES must be a list of `fakir-file' objects to be faked."
                       (fakir--file-cond from
                         (fakir--file-rename this-fakir-file to)
                         (funcall this-fn from to)))
-         (insert-file-contents (file-name)
-                               (fakir--file-cond file-name
-                                 (insert (fakir-file-content this-fakir-file))
-                                 (funcall this-fn file-name)))
-         (insert-file-contents-literally (file-name)
-                                         (fakir--file-cond file-name
-                                           (insert (fakir-file-content this-fakir-file))
-                                           (funcall this-fn file-name)))
+         (insert-file-contents
+          (file-name &optional visit beg end replace)
+          (fakir--file-cond file-name
+            (insert (fakir-file-content this-fakir-file))
+            (funcall this-fn file-name)))
+         (insert-file-contents-literally
+          (file-name &optional visit beg end replace)
+          (fakir--file-cond file-name
+            (insert (fakir-file-content this-fakir-file))
+            (funcall this-fn file-name)))
          (find-file (file-name)
                     (fakir--file-cond file-name
                       (fakir--find-file this-fakir-file)
