@@ -39,7 +39,7 @@
 
 ;;; Commentary:
 ;;
-;; This is an collection of tools to make testing Emacs core functions
+;; This is a collection of tools to make testing Emacs core functions
 ;; easier.
 
 ;;; Code:
