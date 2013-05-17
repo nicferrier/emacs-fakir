@@ -619,7 +619,8 @@ FAKED-FILES must be a list of `fakir-file' objects to be faked."
                                (funcall this-fun file-name))))
         ,@body))))
 
-(defalias 'fakir-mock-file 'fakir-fake-file)
+(defmacro fakir-mock-file (faked-file &rest body)
+  `(fakir-fake-file ,faked-file ,@body))
 
 (provide 'fakir)
 
