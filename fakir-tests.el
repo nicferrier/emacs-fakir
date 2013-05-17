@@ -119,6 +119,16 @@
     (should (equal "/home/dir" (fakir--file-home ef3)))
     (should (equal nil (fakir--file-home ef2)))))
 
+(ert-deftest fakir--expand ()
+  (should
+   (equal
+    (fakir--expand "/one/../two/../three/four" t)
+    "/one/three/four"))
+  (should
+   (equal
+    (fakir--expand "/one/two/../three/../four" t)
+    "/one/four")))
+
 (ert-deftest fakir--expand-file-name ()
   "Test expanding names to absolutes."
   (should

@@ -390,6 +390,28 @@ part."
    (file-name-as-directory (or dir fakir--home-root))
    file-name))
 
+(defun fakir--expand (file-name rooted-p)
+  "Functional file-name expand."
+  (let ((path
+         (mapconcat
+          'identity
+          (let ((l 
+                 (-reduce
+                  (lambda (a b)
+                    (if (string= b "..")
+                        (if (consp a)
+                            (reverse (cdr (reverse a)))
+                            (list a))
+                        (if (consp a)
+                            (append a (list b))
+                            (list a b))))
+                  (cdr (split-string file-name "/")))))
+            (if (listp l) l (list l)))
+          "/")))
+    (if (and rooted-p (not (equal ?\/ (elt path 0))))
+        (concat "/" path)
+        path)))
+
 (defun fakir--expand-file-name (file-name dir)
   "Implementation of ~ and .. handling for FILE-NAME."
   (let* ((fqfn
@@ -403,19 +425,11 @@ part."
            "^~/\\(.*\\)"
            (lambda (m) (fakir--join (match-string 1 m)))
            fqfn))
-         (path-lst (split-string file-path "/" t))
-         res)
-    (while path-lst
-      (if (string= ".." (car path-lst))
-          (setq res (cdr res))
-          ;; Else 
-          (setq res
-                (cons (car path-lst)
-                      (if (consp res) res))))
-      (setq path-lst (cdr path-lst)))
-    (concat
-     (when (equal ?\/ (elt file-path 0)) "/")
-     (mapconcat 'identity (reverse res) "/"))))
+         (new-path
+          (fakir--expand
+           file-path
+           (equal ?\/ (elt file-path 0)))))
+    new-path))
 
 (defun fakir--find-file (fakir-file)
   "`find-file' implementation for FAKIR-FILE."
@@ -432,14 +446,36 @@ part."
 (defun fakir--namespace (faked-file &rest other-files)
   "Make a namespace with FAKED-FILE in it.
 
+Also adds the directory for the FAKED-FILE.
+
 If OTHER-FILES are specified they are added to."
   (let ((ns (make-hash-table :test 'equal)))
     (puthash
      (fakir--file-path faked-file) faked-file ns)
+    (puthash
+     (file-name-directory
+      (fakir--file-path faked-file))
+     faked-file ns)
     (loop for f in other-files
-       do (puthash
-           (fakir--file-path f) f ns))
+       do (progn
+            (puthash
+             (fakir--file-path f) f ns)
+            (puthash
+             (file-name-directory
+              (fakir--file-path faked-file))
+             faked-file ns)))
     ns))
+
+(defun fakir--namespace-lookup (file-name namespace)
+  "Lookup FILE-NAME in NAMESPACE.
+
+Looks up the FILE-NAME"
+  (kvhash->alist namespace)
+  (or
+   (gethash file-name namespace)
+   (gethash
+    (file-name-as-directory file-name)
+    namespace)))
 
 (defvar fakir-file-namespace nil
   "Namespace used by `fakir--file-cond'.")
@@ -456,7 +492,8 @@ clause to `this-fakir-file'."
         (found-file (make-symbol "ff")))
     `(let* ((,file-name-v ,file-name)
             (,found-file
-             (gethash ,file-name-v fakir-file-namespace)))
+             (fakir--namespace-lookup
+              ,file-name-v fakir-file-namespace)))
        (if (fakir-file-p ,found-file)
            (let ((this-fakir-file ,found-file))
              ,then)
