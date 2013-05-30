@@ -271,7 +271,11 @@
       (fakir-file
        :filename "blah3"
        :directory "/home/fakir-test"
-       :content "NO WAY!"))
+       :content "NO WAY!")
+      (fakir-file
+       :filename "blah3"
+       :directory "/tmp"
+       :content "totally testing!"))
      (let ((real-home-dir
             (file-name-as-directory (getenv "HOME"))))
        (should
@@ -281,6 +285,11 @@
        (should
         (equal
          (expand-file-name "~/blah2")
-         "/home/fakir-test/blah2"))))))
+         "/home/fakir-test/blah2"))
+       (should
+        (equal
+         (let ((ctx-dir "/tmp"))
+           (expand-file-name "blah3" ctx-dir))
+         "/tmp/blah3"))))))
 
 ;;; fakir-tests.el ends here
