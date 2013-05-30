@@ -256,9 +256,9 @@
          (expand-file-name "~/.emacs.d")
          (concat real-home-dir ".emacs.d")))))))
 
-(ert-deftest fakir-fake-file*/expand-file-name ()
+(ert-deftest fakir-fake-file/expand-file-name ()
   (let ((fakir--home-root "/home/fakir-test"))
-    (fakir-fake-file*
+    (fakir-fake-file
      (list
       (fakir-file
        :filename "blah"
