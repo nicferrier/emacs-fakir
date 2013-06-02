@@ -5,9 +5,9 @@
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; URL: http://github.com/nicferrier/emacs-fakir
 ;; Created: 17th March 2012
-;; Version: 0.1.2
+;; Version: 0.1.3
 ;; Keywords: lisp, tools
-;; Package-Requires: ((noflet "0.0.1"))
+;; Package-Requires: ((noflet "0.0.2"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -566,11 +566,11 @@ FAKED-FILE must be a `fakir-file' object or a list of
             (find-file (file-name)
                        (fakir--file-cond file-name
                          (fakir--find-file this-fakir-file)
-                         (funcall this-fun file-name)))
+                         (funcall this-fn file-name)))
             (find-file-noselect (file-name)
                                 (fakir--file-cond file-name
                                   (fakir--find-file this-fakir-file)
-                                  (funcall this-fun file-name))))
+                                  (funcall this-fn file-name))))
            ,@body))))
 
 (defmacro fakir-mock-file (faked-file &rest body)
