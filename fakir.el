@@ -7,7 +7,7 @@
 ;; Created: 17th March 2012
 ;; Version: 0.1.4
 ;; Keywords: lisp, tools
-;; Package-Requires: ((noflet "0.0.2")(dash "1.1.0"))
+;; Package-Requires: ((noflet "0.0.2")(dash "1.3.2"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -531,48 +531,48 @@ FAKED-FILE must be a `fakir-file' object or a list of
                  (apply 'fakir--namespace ,ffv))))
        (noflet
            ((expand-file-name (file-name &optional dir)
-                              (let ((expanded
-                                     (fakir--expand-file-name file-name dir)))
-                                (fakir--file-cond expanded
-                                  expanded
-                                  (funcall this-fn file-name dir))))
+              (let ((expanded
+                     (fakir--expand-file-name file-name dir)))
+                (fakir--file-cond expanded
+                  expanded
+                  (funcall this-fn file-name dir))))
             (file-attributes (file-name)
-                             (fakir--file-cond file-name
-                               (fakir--file-attribs this-fakir-file)
-                               (funcall this-fn file-name)))
+              (fakir--file-cond file-name
+                (fakir--file-attribs this-fakir-file)
+                (funcall this-fn file-name)))
             (file-exists-p (file-name)
-                           (fakir--file-cond file-name
-                             t
-                             (funcall this-fn file-name)))
+              (fakir--file-cond file-name
+                t
+                (funcall this-fn file-name)))
             (write-region (start end file-name &optional append visit lockname mustbenew)
-                          (fakir--file-cond file-name
-                            (fakir--write-region
-                             this-fakir-file ; the faked file - should match file-name
-                             start end file-name append visit mustbenew)
-                            (funcall this-fn start end file-name append visit mustbenew)))
+              (fakir--file-cond file-name
+                (fakir--write-region
+                 this-fakir-file ; the faked file - should match file-name
+                 start end file-name append visit mustbenew)
+                (funcall this-fn start end file-name append visit mustbenew)))
             (rename-file (from to)
-                         (fakir--file-cond from
-                           (fakir--file-rename this-fakir-file to)
-                           (funcall this-fn from to)))
+              (fakir--file-cond from
+                (fakir--file-rename this-fakir-file to)
+                (funcall this-fn from to)))
             (insert-file-contents
-             (file-name &optional visit beg end replace)
-             (fakir--file-cond file-name
-               (insert (fakir-file-content this-fakir-file))
-               (funcall this-fn file-name)))
+                (file-name &optional visit beg end replace)
+              (fakir--file-cond file-name
+                (insert (fakir-file-content this-fakir-file))
+                (funcall this-fn file-name)))
             (insert-file-contents-literally
-             (file-name &optional visit beg end replace)
-             (fakir--file-cond file-name
-               (insert (fakir-file-content this-fakir-file))
-               (funcall this-fn file-name)))
+                (file-name &optional visit beg end replace)
+              (fakir--file-cond file-name
+                (insert (fakir-file-content this-fakir-file))
+                (funcall this-fn file-name)))
             (find-file (file-name)
-                       (fakir--file-cond file-name
-                         (fakir--find-file this-fakir-file)
-                         (funcall this-fn file-name)))
+              (fakir--file-cond file-name
+                (fakir--find-file this-fakir-file)
+                (funcall this-fn file-name)))
             (find-file-noselect (file-name)
-                                (fakir--file-cond file-name
-                                  (fakir--find-file this-fakir-file)
-                                  (funcall this-fn file-name))))
-           ,@body))))
+              (fakir--file-cond file-name
+                (fakir--find-file this-fakir-file)
+                (funcall this-fn file-name))))
+         ,@body))))
 
 (defmacro fakir-mock-file (faked-file &rest body)
   `(fakir-fake-file ,faked-file ,@body))
