@@ -548,6 +548,8 @@ you have not explicitly declared as fake."
 
 FAKED-FILE must be a `fakir-file' object or a list of
 `fakir-file' objects."
+  (declare (indent 1)
+           (debug (sexp &rest form)))
   (let ((ffv (make-symbol "ff")))
     `(let* ((,ffv ,faked-file)
             (fakir-file-namespace
