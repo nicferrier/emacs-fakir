@@ -47,6 +47,7 @@
 (require 'ert)
 (require 'dash)
 (require 'noflet)
+(require 'kv)
 (eval-when-compile (require 'cl))
 
 
@@ -286,6 +287,30 @@ In normal circumstances, we return what the BODY returned."
 	(let ((a "my string!!!"))
 	  (setq a (process-get :fakeproc :somevar))
 	  (list a (process-get :fakeproc :othervar)))))))
+
+
+(defmacro fakir-mock-proc-properties (process-obj &rest body)
+  "Mock process property list functions.
+
+Within BODY the functions `process-get', `process-put' and
+`process-plist' are all mocked to use a hashtable if the process
+passed to them is `eq' to PROCESS-OBJ."
+  (let ((proc-props (make-symbol "procpropsv")))
+    `(let ((,proc-props (make-hash-table :test 'equal)))
+       (noflet ((process-get (proc name)
+                  (if (eq proc ,process-obj)
+                      (gethash name process-properties)
+                      (funcall this-fn proc name)))
+                (process-put (proc name value)
+                  (if (eq proc ,process-obj)
+                      (puthash name value process-properties)
+                      (funcall this-fn proc name value)))
+                (process-plist (proc)
+                  (if (eq proc ,process-obj)
+                      (kvalist->plist
+                       (kvhash->alist process-properties)))))
+         ,@body))))
+
 
 
 ;; Time utils
