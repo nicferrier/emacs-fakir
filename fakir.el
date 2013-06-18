@@ -5,7 +5,7 @@
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; URL: http://github.com/nicferrier/emacs-fakir
 ;; Created: 17th March 2012
-;; Version: 0.1.5
+;; Version: 0.1.6
 ;; Keywords: lisp, tools
 ;; Package-Requires: ((noflet "0.0.3")(dash "1.3.2"))
 
@@ -294,23 +294,38 @@ In normal circumstances, we return what the BODY returned."
 
 Within BODY the functions `process-get', `process-put' and
 `process-plist' are all mocked to use a hashtable if the process
-passed to them is `eq' to PROCESS-OBJ."
+passed to them is `eq' to PROCESS-OBJ.
+
+Also provides an additional function `process-setplist' to set
+the plist of the specified PROCESS-OBJ.  If this function is
+called on anything but PROCESS-OBJ it will error."
+  (declare (indent 1)
+           (debug (sexp &rest form)))
   (let ((proc-props (make-symbol "procpropsv")))
     `(let ((,proc-props (make-hash-table :test 'equal)))
        (noflet ((process-get (proc name)
                   (if (eq proc ,process-obj)
-                      (gethash name process-properties)
+                      (gethash name ,proc-props)
                       (funcall this-fn proc name)))
                 (process-put (proc name value)
                   (if (eq proc ,process-obj)
-                      (puthash name value process-properties)
+                      (puthash name value ,proc-props)
                       (funcall this-fn proc name value)))
                 (process-plist (proc)
                   (if (eq proc ,process-obj)
                       (kvalist->plist
-                       (kvhash->alist process-properties)))))
+                       (kvhash->alist ,proc-props))))
+                (process-setplist (proc &rest props)
+                  (if (eq proc ,process-obj)
+                      (mapc
+                       (lambda (pair)
+                         (puthash
+                          (car pair) (cdr pair)
+                          ,proc-props))
+                       (kvplist->alist props))
+                      ;; Will error?
+                      (funcall this-fn proc props))))
          ,@body))))
-
 
 
 ;; Time utils
