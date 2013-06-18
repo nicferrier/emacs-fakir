@@ -16,12 +16,8 @@ Here's the API currently.
 
 Fake //faked-file// and evaluate //body//.
 
-
-=== fakir-fake-file* faked-files &rest body ===
-
-Fake //faked-files// and evaluate //body//.
-
-//faked-files// must be a list of [[fakir-file]] objects to be faked.
+//faked-file// must be a [[fakir-file]] object or a list of
+[[fakir-file]] objects.
 
 
 === fakir-file &rest args ===
@@ -43,9 +39,20 @@ was written.
 Make the path for //fakir-file//.
 
 
-=== fakir-mock-file faked-file &rest body ===
+=== fakir-mock-proc-properties process-obj &rest body ===
 
-Fake //faked-file// and evaluate //body//.
+Mock process property list functions.
+
+Within //body// the functions [[process-get]], [[process-put]] and
+[[process-plist]] are all mocked to use a hashtable if the process
+passed to them is [[eq]] to //process-obj//.
+
+Also provides an additional function [[process-setplist]] to set
+the plist of the specified //process-obj//.  If this function is
+called on anything but //process-obj// it will error.
+
+//This is the beginning of a noflet alternative to
+`fakir-mock-process'//
 
 
 === fakir-mock-process process-symbol process-bindings &rest body ===
@@ -95,6 +102,8 @@ A very quick function to test mocking process macro.
 === fakir-time-encode time-str ===
 
 Encode the //time-str// as an EmacsLisp time.
+
+
 
 
 
