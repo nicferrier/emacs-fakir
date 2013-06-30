@@ -5,7 +5,7 @@
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; URL: http://github.com/nicferrier/emacs-fakir
 ;; Created: 17th March 2012
-;; Version: 0.1.6
+;; Version: 0.1.7
 ;; Keywords: lisp, tools
 ;; Package-Requires: ((noflet "0.0.3")(dash "1.3.2"))
 
@@ -474,10 +474,13 @@ part."
 
 (defun fakir--find-file (fakir-file)
   "`find-file' implementation for FAKIR-FILE."
-  (let ((buf (get-buffer-create (fakir-file-filename fakir-file))))
-    (with-current-buffer buf
-      (insert (fakir-file-content fakir-file)))
-    buf))
+  (let ((buf (get-buffer (fakir-file-filename fakir-file))))
+    (if (bufferp buf)
+        buf
+        ;; Else make one and put the content in it
+        (with-current-buffer buf
+          (insert (fakir-file-content fakir-file))
+          (current-buffer)))))
 
 (defun fakir-file-path (fakir-file)
   "Make the path for FAKIR-FILE."
