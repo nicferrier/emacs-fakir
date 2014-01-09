@@ -225,13 +225,7 @@ In normal circumstances, we return what the BODY returned."
         (pvbuf (make-symbol "buf"))
         (result (make-symbol "result")))
     `(let
-         ((,pvvar
-           (fakir--make-hash-table
-            (list ,@(loop for p in process-bindings
-                       collect
-                         (if (and p (listp p))
-                             (list 'list `(quote ,(car p)) (cadr p))
-                             (list 'cons `,p nil))))))
+         ((,pvvar (list ,@(fakir/let-bindings->alist process-bindings)))
           ;; This is a buffer for the output
           (,pvoutbuf (progn
                        (and (get-buffer "*fakir-outbuf*")
