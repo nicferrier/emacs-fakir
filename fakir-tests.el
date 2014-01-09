@@ -75,6 +75,85 @@
 		    (delete-process :fakeproc)))
 	  "the process finished"))))))
 
+(ert-deftest fakir-mock-proc-properties ()
+  "A very quick function to test mocking process macro."
+  (let ((somevalue 30))
+    (fakir-mock-proc-properties :fakeproc
+      (process-put :fakeproc :somevar 10)
+      (process-put :fakeproc :othervar 20)
+      (should (equal 10 (process-get :fakeproc :somevar)))
+      (should (equal 20 (process-get :fakeproc :othervar)))
+      (set-process-plist :fakeproc :one 1 :two 2)
+      (should-not (process-get :fakeproc :somevar))
+      (should (equal 1 (process-get :fakeproc :one)))
+      (should (equal 2 (plist-get (process-plist :fakeproc) :two))))))
+
+(ert-deftest fakir-make-unix-socket ()
+  "Test that we can make unix sockets."
+  (let ((pair (fakir-make-unix-socket "nictest1")))
+    (unwind-protect
+         (progn
+           (should (processp (cadr pair)))
+           (should (file-exists-p (car pair))))
+      ;; Clean up
+      (delete-process (cadr pair))
+      (delete-file (car pair))))
+  (let ((pair (fakir-make-unix-socket)))
+    (unwind-protect
+         (progn
+           (should (processp (cadr pair)))
+           (should (file-exists-p (car pair))))
+      ;; Clean up
+      (delete-process (cadr pair))
+      (delete-file (car pair)))))
+
+(ert-deftest fakir-mock-process ()
+  "Test that the mock process stuff works.
+
+Includes a test with a real process so that we can establish the
+bypass for real processes actually works.  The real process test
+requires `make-network-process' with `:family' set to `local' to
+work.  That seems better than trying to use a binary."
+  (should
+   (equal
+    (let ((somevalue 10))
+      (fakir-mock-process :fakeproc
+          ((a 20)
+           (:somevar 15)
+           (:othervar somevalue))
+        (list
+         (processp :fakeproc)
+         (process-get :fakeproc :somevar)
+         (process-get :fakeproc :othervar)
+         ;; testing equality of plists sucks
+         ;;  (process-plist :fakeproc)
+         )))
+    '(t 15 10)))
+  ;; And now with a real process in the mix - NOTE the name `myproc',
+  ;; since the mock-process macro uses the word proc it might be
+  ;; dangerous to use proc as a name. FIXME. Yeah. Right.
+  (should
+   (equal
+    (fakir-with-unix-socket (myproc "ert-fakir-mock-process")
+      (let ((somevalue 10))
+        (unwind-protect
+             (append
+              (list (processp myproc)) ; the real process outside the mock
+              (fakir-mock-process :fakeproc
+                  ((a 20)
+                   (:somevar 15)
+                   (:othervar somevalue))
+                (list
+                 (processp :fakeproc)
+                 (process-get :fakeproc :somevar)
+                 (process-get :fakeproc :othervar)
+                 ;; testing equality of plists sucks
+                 ;;  (process-plist :fakeproc)
+                 (processp myproc) ; the real process inside the mock
+                 )))
+          (when (processp myproc)
+            (delete-process myproc)))))
+    '(t t 15 10 t))))
 
 
 (ert-deftest fakir--file-fqn ()
