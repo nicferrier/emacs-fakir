@@ -51,70 +51,38 @@
 (eval-when-compile (require 'cl))
 
 
-;; A little support code - not sure I can be bothered to package this
-;; seperately
+(defun fakir-make-unix-socket (&optional name)
+  "Make a unix socket server process optionally based on NAME.
 
-(defmacro* flet-overrides (predicate
-			   bindings
-			   &rest form)
-  "Override functions only when an argument tests true.
+Returns a list of the processes socket file and the process object."
+  (let* ((socket-file
+          (concat "/tmp/" (apply 'make-temp-name
+                                 (list (or name "fakir-make-unix-socket")))))
+         (myproc (make-network-process
+                  :name socket-file
+                  :family 'local :server t
+                  :service socket-file)))
+    (list socket-file myproc)))
 
-PREDICATE is some test to be applied to a specified argument
-of each bound FUNC to decide whether to execute the overridden
-code or the existing code.
+(defmacro* fakir-with-unix-socket ((socket-sym &optional socket-name) &rest body)
+  "Execute BODY with a Unix socket server bound to SOCKET-SYM.
 
-For each function, TEST-ARG specifies the name of the argument in
-the ARGLIST which will be passed to the PREDICATE.
+Optionally the socket is created with SOCKET-NAME which means
+that the file used to back the socket is named after SOCKET-NAME.
 
-BODY defines the code to be run for the specified FUNC when the
-PREDICATE is `t' for the TEST-ARG.
-
-This is really useful when you want to mock a set of functions
-that operate on a particular type, processes for example:
-
-  (flet-overrides fake-process-p
-     ((process-buffer process (process)
-        (get-buffer-create \"\"))
-      (process-status process (process)
-        \"run\")
-      (delete-process process (process)
-        t)
-      (set-process-buffer process (process buffer)
-        nil))
-    ;; Code under test
-    ...)
-
-\(fn PREDICATE ((FUNC TEST-ARG ARGLIST BODY...) ...) FORM...)"
-  (declare (debug (sexp sexp &rest form))
-           (indent defun))
-  (let*
-      ((flets
-        (loop
-         for i in bindings
-         collect
-         (destructuring-bind (name test-arg args &rest body) i
-           (let ((saved-func-namev (make-symbol "saved-func-name")))
-             (let ((saved-func-namev
-                    (intern (format "saved-func-%s"
-                                    (symbol-name name)))))
-               `(,name ,args
-                       (if (not (,predicate ,test-arg))
-                           (funcall ,saved-func-namev ,@args)
-                         ,@body)))))))
-       (lets
-        (loop
-         for i in bindings
-         collect
-         (destructuring-bind (name test-arg args &rest body) i
-           (let ((saved-func-namev (make-symbol "saved-func-name")))
-             (let ((saved-func-namev
-                    (intern (format "saved-func-%s"
-                                    (symbol-name name)))))
-               `(,saved-func-namev
-                 (symbol-function (quote ,name)))))))))
-    `(let ,lets
-       (flet ,flets
-         ,@form))))
+The socket process is closed on completion and the associated
+file is deleted."
+  (declare (indent 1))
+  (let ((spv (make-symbol "spv"))
+        (sockfilev (make-symbol "sockfilev")))
+    `(let* ((,spv (fakir-make-unix-socket ,socket-name))
+            (,sockfilev (car ,spv))
+            (,socket-sym (cadr ,spv)))
+       (unwind-protect
+            (progn
+              ,@body)
+         (delete-process ,socket-sym)
+         (delete-file ,sockfilev)))))
 
 
 ;; Mocking processes
