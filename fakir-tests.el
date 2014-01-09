@@ -42,39 +42,6 @@
     (should (equal nil (gethash ':self-evaling-symbol-as-well h)))))
 
 
-(ert-deftest fakir-mock-process ()
-  "Basic test of the mock process."
-  :tags '(unit)
-  (let ((x (fakir-test-mock-process)))
-    (should (equal
-             '(15 30)
-             x))))
-
-(ert-deftest fakir-mock-process-delete ()
-  "Test the delete handling."
-  :tags '(unit)
-  ;; delete-process causes the body to return :mock-process-finished
-  (should
-   (fakir-mock-process
-     :fakeproc
-     ((a 20)
-      (:somevar "somevar"))
-     (let ((x "a string of text"))
-       (delete-process :fakeproc))))
-  ;; How to use catch inside the BODY to handle delete-process
-  (should
-   (equal
-    "the process finished"
-    (fakir-mock-process
-      :fakeproc
-      ((a 20)
-       (:somevar "somevar"))
-      (let ((x "a string of text"))
-	(when (eq :mock-process-finished
-		  (catch :mock-process-finished
-		    (delete-process :fakeproc)))
-	  "the process finished"))))))
-
 (ert-deftest fakir-mock-proc-properties ()
   "A very quick function to test mocking process macro."
   (let ((somevalue 30))
@@ -155,6 +122,30 @@ work.  That seems better than trying to use a binary."
             (delete-process myproc)))))
     '(t t 15 10 t))))
 
+(ert-deftest fakir-mock-process-delete ()
+  "Test the delete handling."
+  :tags '(unit)
+  ;; delete-process causes the body to return :mock-process-finished
+  (should
+   (fakir-mock-process
+     :fakeproc
+     ((a 20)
+      (:somevar "somevar"))
+     (let ((x "a string of text"))
+       (delete-process :fakeproc))))
+  ;; How to use catch inside the BODY to handle delete-process
+  (should
+   (equal
+    "the process finished"
+    (fakir-mock-process
+      :fakeproc
+      ((a 20)
+       (:somevar "somevar"))
+      (let ((x "a string of text"))
+	(when (eq :mock-process-finished
+		  (catch :mock-process-finished
+		    (delete-process :fakeproc)))
+	  "the process finished"))))))
 
 (ert-deftest fakir--file-fqn ()
   "Test we can make fully qualified names for files."
