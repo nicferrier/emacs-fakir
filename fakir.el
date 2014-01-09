@@ -244,91 +244,42 @@ In normal circumstances, we return what the BODY returned."
 			     ,pvvar
 			     specified-buf))))
 	 ;; Rebind the process function interface
-	 (flet-overrides ,predfunc
-	   ((process-get proc (proc key) (gethash key ,pvvar))
-	    (process-put proc (proc key value) (puthash key value ,pvvar))
-	    (processp proc (proc) t)
-	    (process-send-eof proc (proc) t)
-	    (process-status proc (proc) 'fake)
-	    (process-buffer proc (proc) (,get-or-create-buf-func proc))
-	    (process-contact
-	     proc (proc &optional arg)
-	     (list "localhost" 8000)) ; FIXME - elnode specific
-	    (process-send-string
-	     proc (proc str)
-	     (with-current-buffer ,pvoutbuf
-	       (save-excursion
-		 (goto-char (point-max))
-		 (insert str))))
-	    (delete-process
-	     proc (proc)
-	     (throw
-	      :mock-process-finished :mock-process-finished))
-	    (set-process-buffer
-	     proc (proc buffer)
-	     (,get-or-create-buf-func proc buffer)))
-           (flet ((fakir-get-output-buffer () ,pvoutbuf))
-             (unwind-protect
-                  (setq ,result
-                        (catch :mock-process-finished
-                          ,@body))
-               ;; Now clean up
-               (when (bufferp ,pvbuf)
-                 (with-current-buffer ,pvbuf
-                   (set-buffer-modified-p nil)
-                   (kill-buffer ,pvbuf))))))))))
-
-(defun fakir-test-mock-process ()
-  "A very quick function to test mocking process macro."
-  (let ((somevalue 30))
-    (fakir-mock-process
-        :fakeproc
-        ((a 20)
-         (:somevar 15)
-         (:othervar somevalue))
-      (let ((z 10))
-	(let ((a "my string!!!"))
-	  (setq a (process-get :fakeproc :somevar))
-	  (list a (process-get :fakeproc :othervar)))))))
-
-
-(defmacro fakir-mock-proc-properties (process-obj &rest body)
-  "Mock process property list functions.
-
-Within BODY the functions `process-get', `process-put' and
-`process-plist' are all mocked to use a hashtable if the process
-passed to them is `eq' to PROCESS-OBJ.
-
-Also provides an additional function `process-setplist' to set
-the plist of the specified PROCESS-OBJ.  If this function is
-called on anything but PROCESS-OBJ it will error."
-  (declare (indent 1)
-           (debug (sexp &rest form)))
-  (let ((proc-props (make-symbol "procpropsv")))
-    `(let ((,proc-props (make-hash-table :test 'equal)))
-       (noflet ((process-get (proc name)
-                  (if (eq proc ,process-obj)
-                      (gethash name ,proc-props)
-                      (funcall this-fn proc name)))
-                (process-put (proc name value)
-                  (if (eq proc ,process-obj)
-                      (puthash name value ,proc-props)
-                      (funcall this-fn proc name value)))
-                (process-plist (proc)
-                  (if (eq proc ,process-obj)
-                      (kvalist->plist
-                       (kvhash->alist ,proc-props))))
-                (process-setplist (proc &rest props)
-                  (if (eq proc ,process-obj)
-                      (mapc
-                       (lambda (pair)
-                         (puthash
-                          (car pair) (cdr pair)
-                          ,proc-props))
-                       (kvplist->alist props))
-                      ;; Will error?
-                      (funcall this-fn proc props))))
-         ,@body))))
+         (fakir-mock-proc-properties ,process-symbol
+           (macrolet ((or-args (form &rest args)
+                        `(if (eq proc ,,process-symbol)
+                             ,form
+                             (apply this-fn (list ,@args)))))
+             (noflet
+                 ((processp (proc) (or-args t proc))
+                  (process-send-eof (proc) (or-args t proc))
+                  (process-status (proc) (or-args 'fake proc))
+                  (process-buffer (proc) (or-args (,get-or-create-buf-func proc) proc))
+                  (process-contact (proc &optional arg) ; FIXME - elnode specific
+                    (or-args (list "localhost" 8000) proc))
+                  (process-send-string (proc str)
+                    (or-args
+                     (with-current-buffer ,pvoutbuf
+                       (save-excursion
+                         (goto-char (point-max))
+                         (insert str)))
+                     proc))
+                  (delete-process (proc)
+                    (or-args 
+                     (throw :mock-process-finished :mock-process-finished)
+                     proc))
+                  (set-process-buffer (proc buffer)
+                    (or-args (,get-or-create-buf-func proc buffer) proc)))
+               (apply 'set-process-plist (cons ,process-symbol (kvalist->plist ,pvvar)))
+               (flet ((fakir-get-output-buffer () ,pvoutbuf))
+                 (unwind-protect
+                      (setq ,result
+                            (catch :mock-process-finished
+                              ,@body))
+                   ;; Now clean up
+                   (when (bufferp ,pvbuf)
+                     (with-current-buffer ,pvbuf
+                       (set-buffer-modified-p nil)
+                       (kill-buffer ,pvbuf))))))))))))
 
 
 ;; Time utils
