@@ -142,6 +142,47 @@ created one."
     pvbuf))
 
 
+(defmacro fakir-mock-proc-properties (process-obj &rest body)
+  "Mock process property list functions.
+
+Within BODY the functions `process-get', `process-put' and
+`process-plist' and `set-process-plist' are all mocked to use a
+hashtable if the process passed to them is `eq' to PROCESS-OBJ."
+  (declare (indent 1)
+           (debug (sexp &rest form)))
+  (let ((proc-props (make-symbol "procpropsv")))
+    `(let ((,proc-props (make-hash-table :test 'equal)))
+       (macrolet ((or-args (form &rest args)
+                    `(if (eq proc ,,process-obj)
+                         ,form
+                         (apply this-fn ,@args))))
+         (noflet ((process-get (proc name)
+                    (or-args (gethash name ,proc-props) proc name))
+                  (process-put (proc name value)
+                    (or-args (puthash name value ,proc-props) proc name value))
+                  (process-plist (proc)
+                    (or-args
+                     (kvalist->plist (kvhash->alist ,proc-props))
+                     proc))
+                  (set-process-plist (proc &rest props)
+                    (or-args
+                     (setq ,proc-props (kvalist->hash (kvplist->alist props t)))
+                     proc props)))
+           ,@body)))))
+
+(defun fakir/let-bindings->alist (bindings)
+  "Turn let like BINDINGS into an alist.
+
+Makes sure the resulting alist has `consed' pairs rather than
+lists.
+
+Generally useful macro helper should be elsewhere."
+  (loop for p in bindings
+     collect
+       (if (and p (listp p))
+           (list 'cons `(quote ,(car p)) (cadr p))
+           (list 'cons `,p nil))))
+
 (defmacro fakir-mock-process (process-symbol process-bindings &rest body)
   "Allow easier testing by mocking the process functions.
 
