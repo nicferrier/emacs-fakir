@@ -5,7 +5,7 @@
 ;; Maintainer: Nic Ferrier <nferrier@ferrier.me.uk>
 ;; URL: http://github.com/nicferrier/emacs-fakir
 ;; Created: 17th March 2012
-;; Version: 0.1.7
+;; Version: 0.1.8
 ;; Keywords: lisp, tools
 ;; Package-Requires: ((noflet "0.0.8")(dash "1.3.2")(kv "0.0.19"))
 
