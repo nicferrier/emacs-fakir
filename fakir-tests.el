@@ -2,33 +2,6 @@
 
 (require 'fakir)
 
-(ert-deftest flet-overrides ()
-  "Test the flet-override stuff."
-  (flet ((my-test (x)
-                  (and
-                   (listp x)
-                   (let ((v (car x)))
-                     (eq :object v))))
-         (my-func (x y)
-                  (format "strings: %s %s" x y))
-         (my-proc (z)
-                  (* 2 x)))
-    (flet-overrides
-      my-test ; the type predicate we'll use
-      ((my-func a (a b)
-                (+ (cadr a) b))
-       (my-proc y (x y)
-                (+ 10 y)))
-      (should
-       (equal
-        '("strings: nic caroline" 7)
-        (list
-         ;; This call doesn't match the predicate
-         (my-func "nic" "caroline")
-         ;; This call does match the predicate
-         (my-func '(:object 5) 2)))))))
-
-
 (ert-deftest fakir--make-hash-table ()
   "Test hash table construction."
   (let ((h (fakir--make-hash-table '((a 10)
