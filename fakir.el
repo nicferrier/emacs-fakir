@@ -84,6 +84,21 @@ file is deleted."
          (delete-process ,socket-sym)
          (delete-file ,sockfilev)))))
 
+(defmacro fakir-with-file-buffer (buffer-var &rest body)
+  "Make a buffer visiting a file and assign it to BUFFER-VAR.
+
+The file only exists for the scope of the macro.  Both the file
+and the buffer visiting it are destroyed when the scope exits."
+  (declare (indent 1))
+  (let ((filev (make-symbol "filev")))
+    `(let* ((,filev (make-temp-file  "filebuf"))
+            (,buffer-var (find-file-noselect ,filev)))
+       (unwind-protect
+            (progn ,@body)
+         (with-current-buffer ,buffer-var
+           (set-buffer-modified-p nil))
+         (kill-buffer ,buffer-var)
+         (delete-file ,filev)))))
 
 ;; Mocking processes
 
