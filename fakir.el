@@ -127,13 +127,13 @@ The ALIST looks like a let-list."
             (puthash f nil bindings))))
     bindings))
 
-(defun fakir--get-or-create-buf (pvbuf pvvar &optional specified-buf)
+(defun fakir--get-or-create-buf (pvbuf pv-alist &optional specified-buf)
   "Special get or create to support the process mocking.
 
 PVBUF is a, possibly existing, buffer reference.  If nil then we
 create the buffer.
 
-PVVAR is a hashtable of properties, possibly containing the
+PV-ALIST is an alist of properties, possibly containing the
 `:buffer' property which specifies a string to be used as the
 content of the buffer.
 
@@ -151,9 +151,9 @@ created one."
 		 (generate-new-buffer-name
 		  "* fakir mock proc buf *")))))
     ;; If we've got a buffer value then insert it.
-    (when (gethash :buffer pvvar)
+    (when (kva :buffer pv-alist)
       (with-current-buffer pvbuf
-	(insert (gethash :buffer pvvar))))
+	(insert (kva :buffer pv-alist))))
     pvbuf))
 
 
