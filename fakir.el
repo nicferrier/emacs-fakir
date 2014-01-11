@@ -111,7 +111,7 @@ directly, they can just expect it to be there. `elnode--filter',
 though, needs to set the process-buffer to work properly.")
 
 
-(defun fakir--make-hash-table (alist)
+(defun fakir/make-hash-table (alist) ; possible redundant now.
   "Make a hash table from the ALIST.
 
 The ALIST looks like a let-list."
@@ -127,7 +127,7 @@ The ALIST looks like a let-list."
             (puthash f nil bindings))))
     bindings))
 
-(defun fakir--get-or-create-buf (pvbuf pv-alist &optional specified-buf)
+(defun fakir/get-or-create-buf (pvbuf pv-alist &optional specified-buf)
   "Special get or create to support the process mocking.
 
 PVBUF is a, possibly existing, buffer reference.  If nil then we
@@ -254,7 +254,7 @@ In normal circumstances, we return what the BODY returned."
        (flet ((,predfunc (object) (eq object ,process-symbol))
 	      (,get-or-create-buf-func
 	       (proc &optional specified-buf)
-	       (setq ,pvbuf (fakir--get-or-create-buf
+	       (setq ,pvbuf (fakir/get-or-create-buf
 			     ,pvbuf
 			     ,pvvar
 			     specified-buf))))
