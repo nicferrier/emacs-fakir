@@ -233,68 +233,64 @@ In normal circumstances, we return what the BODY returned."
   (declare
    (debug (sexp sexp &rest form))
    (indent defun))
-  (let ((predfunc (make-symbol "predfunc"))
-	(get-or-create-buf-func (make-symbol "getorcreatebuffunc"))
+  (let ((get-or-create-buf (make-symbol "get-or-create-buf"))
+        (fakir-kill-buffer (make-symbol "fakir-kill-buffer"))
 	(pvvar (make-symbol "pv"))
         (pvoutbuf (make-symbol "pvoutbuf"))
         (pvbuf (make-symbol "buf"))
         (result (make-symbol "result")))
-    `(let
-         ((,pvvar (list ,@(fakir/let-bindings->alist process-bindings)))
-          ;; This is a buffer for the output
-          (,pvoutbuf (progn
-                       (and (get-buffer "*fakir-outbuf*")
-                            (kill-buffer "*fakir-outbuf*"))
-                       (get-buffer-create "*fakir-outbuf*")))
-          ;; For assigning the result of the body
-          ,result
-          ;; Dummy buffer variable for the process - we fill this in
-          ;; dynamically in 'process-buffer
-          ,pvbuf)
-       (flet ((,predfunc (object) (eq object ,process-symbol))
-	      (,get-or-create-buf-func
-	       (proc &optional specified-buf)
-	       (setq ,pvbuf (fakir/get-or-create-buf
-			     ,pvbuf
-			     ,pvvar
-			     specified-buf))))
-	 ;; Rebind the process function interface
-         (fakir-mock-proc-properties ,process-symbol
-           (macrolet ((or-args (form &rest args)
-                        `(if (eq proc ,,process-symbol)
-                             ,form
-                             (apply this-fn (list ,@args)))))
-             (noflet
-                 ((processp (proc) (or-args t proc))
-                  (process-send-eof (proc) (or-args t proc))
-                  (process-status (proc) (or-args 'fake proc))
-                  (process-buffer (proc) (or-args (,get-or-create-buf-func proc) proc))
-                  (process-contact (proc &optional arg) ; FIXME - elnode specific
-                    (or-args (list "localhost" 8000) proc))
-                  (process-send-string (proc str)
-                    (or-args
-                     (with-current-buffer ,pvoutbuf
-                       (save-excursion
-                         (goto-char (point-max))
-                         (insert str)))
-                     proc))
-                  (delete-process (proc)
-                    (or-args 
-                     (throw :mock-process-finished :mock-process-finished)
-                     proc))
-                  (set-process-buffer (proc buffer)
-                    (or-args (,get-or-create-buf-func proc buffer) proc)))
-               (apply 'set-process-plist (cons ,process-symbol (kvalist->plist ,pvvar)))
-               (flet ((fakir-get-output-buffer () ,pvoutbuf))
-                 (unwind-protect
-                      (setq ,result
-                            (catch :mock-process-finished
-                              ,@body))
-                   ;; Now clean up
-                   (when (bufferp ,pvbuf)
-                     (with-current-buffer ,pvbuf
-                       (set-buffer-modified-p nil)
-                       (kill-buffer ,pvbuf))))))))))))
+    `(let ((,pvvar (list ,@(fakir/let-bindings->alist process-bindings)))
+           ;; This is a buffer for the output
+           (,pvoutbuf (get-buffer-create "*fakir-outbuf*"))
+           ;; For assigning the result of the body
+           ,result
+           ;; Dummy buffer variable for the process - we fill this in
+           ;; dynamically in 'process-buffer
+           ,pvbuf)
+       (fakir-mock-proc-properties ,process-symbol
+         (flet ((fakir-get-output-buffer () ,pvoutbuf)
+                (,get-or-create-buf (proc &optional specified-buf)
+                  (setq ,pvbuf (fakir/get-or-create-buf
+                                ,pvbuf
+                                ,pvvar
+                                specified-buf)))
+                (,fakir-kill-buffer (buf)
+                  (when (bufferp buf)
+                    (with-current-buffer buf (set-buffer-modified-p nil))
+                    (kill-buffer buf))))
+           (unwind-protect
+                (macrolet ((or-args (form &rest args)
+                             `(if (eq proc ,,process-symbol)
+                                  ,form
+                                  (apply this-fn (list ,@args)))))
+                  ;; Rebind the process function interface
+                  (noflet
+                      ((processp (proc) (or-args t proc))
+                       (process-send-eof (proc) (or-args t proc))
+                       (process-status (proc) (or-args 'fake proc))
+                       (process-buffer (proc) (or-args (,get-or-create-buf proc) proc))
+                       (process-contact (proc &optional arg) ; FIXME - elnode specific
+                         (or-args (list "localhost" 8000) proc))
+                       (process-send-string (proc str)
+                         (or-args
+                          (with-current-buffer ,pvoutbuf
+                            (save-excursion
+                              (goto-char (point-max))
+                              (insert str)))
+                          proc))
+                       (delete-process (proc)
+                         (or-args 
+                          (throw :mock-process-finished :mock-process-finished)
+                          proc))
+                       (set-process-buffer (proc buffer)
+                         (or-args (,get-or-create-buf proc buffer) proc)))
+                    (set-process-plist ,process-symbol (kvalist->plist ,pvvar))
+                    (setq ,result
+                          (catch :mock-process-finished
+                            ,@body))))
+             ;; Now clean up
+             (,fakir-kill-buffer ,pvbuf)
+             (,fakir-kill-buffer ,pvoutbuf)))))))
 
 
 ;; Time utils
