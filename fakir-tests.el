@@ -2,13 +2,13 @@
 
 (require 'fakir)
 
-(ert-deftest fakir--make-hash-table ()
+(ert-deftest fakir/make-hash-table ()
   "Test hash table construction."
-  (let ((h (fakir--make-hash-table '((a 10)
-                                     (b 20)
-                                     (fakir-alist-value "is a string")
-                                     fakir-single-value
-                                     :self-evaling-symbol-as-well))))
+  (let ((h (fakir/make-hash-table '((a 10)
+                                    (b 20)
+                                    (fakir-alist-value "is a string")
+                                    fakir-single-value
+                                    :self-evaling-symbol-as-well))))
     (should (equal 10 (gethash 'a h)))
     (should (equal 20 (gethash 'b h)))
     (should (equal nil (gethash 'fakir-single-value h)))
@@ -202,7 +202,7 @@ work.  That seems better than trying to use a binary."
      "/home/emacsuser/bladh/../../../../../../qwdqdq.5" "/home")
     "/qwdqdq.5")))
 
-(ert-deftest fakir--find-file ()
+(ert-deftest fakir/find-file ()
   (let ((f (fakir-file :filename "README"
                        :directory "/home/fakir"
                        :content "This is a ReadMe file.")))
