@@ -23,7 +23,7 @@
       (process-put :fakeproc :othervar 20)
       (should (equal 10 (process-get :fakeproc :somevar)))
       (should (equal 20 (process-get :fakeproc :othervar)))
-      (set-process-plist :fakeproc :one 1 :two 2)
+      (set-process-plist :fakeproc (list :one 1 :two 2))
       (should-not (process-get :fakeproc :somevar))
       (should (equal 1 (process-get :fakeproc :one)))
       (should (equal 2 (plist-get (process-plist :fakeproc) :two))))))
