@@ -586,6 +586,8 @@ FAKED-FILE must be a `fakir-file' object or a list of
          ,@body))))
 
 (defmacro fakir-mock-file (faked-file &rest body)
+  (declare (debug (sexp &rest form))
+           (indent 1))
   `(fakir-fake-file ,faked-file ,@body))
 
 (provide 'fakir)
