@@ -179,7 +179,7 @@ hashtable if the process passed to them is `eq' to PROCESS-OBJ."
                     (or-args
                      (kvalist->plist (kvhash->alist ,proc-props))
                      proc))
-                  (set-process-plist (proc &rest props)
+                  (set-process-plist (proc props)
                     (or-args
                      (setq ,proc-props (kvalist->hash (kvplist->alist props t)))
                      proc props)))
