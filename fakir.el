@@ -443,7 +443,8 @@ part."
     (if (bufferp buf)
         buf
         ;; Else make one and put the content in it
-        (with-current-buffer buf
+        (with-current-buffer
+            (get-buffer-create (fakir-file-filename fakir-file))
           (insert (fakir-file-content fakir-file))
           (current-buffer)))))
 
