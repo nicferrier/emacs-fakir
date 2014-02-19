@@ -165,24 +165,24 @@ Within BODY the functions `process-get', `process-put' and
 hashtable if the process passed to them is `eq' to PROCESS-OBJ."
   (declare (indent 1)
            (debug (sexp &rest form)))
-  (let ((proc-props (make-symbol "procpropsv")))
-    `(let ((,proc-props (make-hash-table :test 'equal)))
+  (let ((proc-plist (make-symbol "procpropsv")))
+    `(let (,proc-plist)
        (macrolet ((or-args (form &rest args)
                     `(if (eq proc ,,process-obj)
                          ,form
                          (apply this-fn ,@args))))
          (noflet ((process-get (proc name)
-                    (or-args (gethash name ,proc-props) proc name))
+                    (or-args (plist-get ,proc-plist name) proc name))
                   (process-put (proc name value)
-                    (or-args (puthash name value ,proc-props) proc name value))
+                    (or-args
+                     (if ,proc-plist 
+                         (plist-put ,proc-plist name value)
+                         (setq ,proc-plist (list name value)))
+                     proc name value))
                   (process-plist (proc)
-                    (or-args
-                     (kvalist->plist (kvhash->alist ,proc-props))
-                     proc))
+                    (or-args ,proc-plist proc))
                   (set-process-plist (proc props)
-                    (or-args
-                     (setq ,proc-props (kvalist->hash (kvplist->alist props t)))
-                     proc props)))
+                    (or-args (setq ,proc-plist props) proc props)))
            ,@body)))))
 
 (defun fakir/let-bindings->alist (bindings)
