@@ -142,18 +142,18 @@ created one."
   (if (bufferp pvbuf)
       pvbuf
     (setq pvbuf
-	  (if fakir-mock-process-require-specified-buffer
-	      (if (bufferp specified-buf)
-		  specified-buf
-		nil)
-	    (or specified-buf
-		(get-buffer-create
-		 (generate-new-buffer-name
-		  "* fakir mock proc buf *")))))
+    (if fakir-mock-process-require-specified-buffer
+        (if (bufferp specified-buf)
+      specified-buf
+    nil)
+      (or specified-buf
+    (get-buffer-create
+     (generate-new-buffer-name
+      "* fakir mock proc buf *")))))
     ;; If we've got a buffer value then insert it.
     (when (kva :buffer pv-alist)
       (with-current-buffer pvbuf
-	(insert (kva :buffer pv-alist))))
+  (insert (kva :buffer pv-alist))))
     pvbuf))
 
 
@@ -175,7 +175,7 @@ hashtable if the process passed to them is `eq' to PROCESS-OBJ."
                     (or-args (plist-get ,proc-plist name) proc name))
                   (process-put (proc name value)
                     (or-args
-                     (if ,proc-plist 
+                     (if ,proc-plist
                          (plist-put ,proc-plist name value)
                          (setq ,proc-plist (list name value)))
                      proc name value))
@@ -235,7 +235,7 @@ In normal circumstances, we return what the BODY returned."
    (indent defun))
   (let ((get-or-create-buf (make-symbol "get-or-create-buf"))
         (fakir-kill-buffer (make-symbol "fakir-kill-buffer"))
-	(pvvar (make-symbol "pv"))
+  (pvvar (make-symbol "pv"))
         (pvoutbuf (make-symbol "pvoutbuf"))
         (pvbuf (make-symbol "buf"))
         (result (make-symbol "result")))
@@ -279,7 +279,7 @@ In normal circumstances, we return what the BODY returned."
                               (insert str)))
                           proc))
                        (delete-process (proc)
-                         (or-args 
+                         (or-args
                           (throw :mock-process-finished :mock-process-finished)
                           proc))
                        (set-process-buffer (proc buffer)
@@ -401,7 +401,7 @@ part."
   (let ((path
          (mapconcat
           'identity
-          (let ((l 
+          (let ((l
                  (-reduce
                   (lambda (a b)
                     (if (string= b "..")
