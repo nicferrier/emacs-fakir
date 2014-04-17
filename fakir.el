@@ -453,6 +453,30 @@ part."
   (concat (fakir-file-directory fakir-file)
           (fakir-file-filename fakir-file)))
 
+
+(defun fakir--file-parent-directories (faked-file)
+  "Return the parent directories for a FAKED-FILE."
+  (let ((directory-path (fakir-file-directory faked-file))
+        (path "")
+        (path-list '("/")))
+    (dolist (path-part (split-string directory-path "/" t))
+      (let ((current-path (concat path "/" path-part)))
+        (push current-path path-list)
+        (setq path current-path)))
+    path-list))
+
+(defun fakir--namespace-put (faked-file namespace)
+  "Put given FAKED-FILE and its parent folders into the given NAMESPACE."
+  (puthash (fakir--file-path faked-file) faked-file namespace)
+  (dolist (parent-dir (fakir--file-parent-directories faked-file))
+    (puthash
+     parent-dir
+     (fakir-file
+      :filename (file-name-nondirectory parent-dir)
+      :directory (file-name-directory parent-dir)
+      :content "")
+     namespace)))
+
 (defun fakir--namespace (faked-file &rest other-files)
   "Make a namespace with FAKED-FILE in it.
 
@@ -460,19 +484,9 @@ Also adds the directory for the FAKED-FILE.
 
 If OTHER-FILES are specified they are added to."
   (let ((ns (make-hash-table :test 'equal)))
-    (puthash
-     (fakir--file-path faked-file) faked-file ns)
-    (puthash
-     (file-name-directory
-      (fakir--file-path faked-file))
-     faked-file ns)
-    (loop for f in other-files
-       do (progn
-            (puthash
-             (fakir--file-path f) f ns)
-            (puthash
-             (file-name-directory
-              (fakir--file-path f)) f ns)))
+    (fakir--namespace-put faked-file ns)
+    (dolist (other-file other-files)
+      (fakir--namespace-put other-file ns))
     ns))
 
 (defun fakir--namespace-lookup (file-name namespace)
