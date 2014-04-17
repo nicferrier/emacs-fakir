@@ -472,8 +472,7 @@ If OTHER-FILES are specified they are added to."
              (fakir--file-path f) f ns)
             (puthash
              (file-name-directory
-              (fakir--file-path faked-file))
-             faked-file ns)))
+              (fakir--file-path f)) f ns)))
     ns))
 
 (defun fakir--namespace-lookup (file-name namespace)
