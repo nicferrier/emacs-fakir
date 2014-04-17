@@ -142,18 +142,18 @@ created one."
   (if (bufferp pvbuf)
       pvbuf
     (setq pvbuf
-	  (if fakir-mock-process-require-specified-buffer
-	      (if (bufferp specified-buf)
-		  specified-buf
-		nil)
-	    (or specified-buf
-		(get-buffer-create
-		 (generate-new-buffer-name
-		  "* fakir mock proc buf *")))))
+    (if fakir-mock-process-require-specified-buffer
+        (if (bufferp specified-buf)
+      specified-buf
+    nil)
+      (or specified-buf
+    (get-buffer-create
+     (generate-new-buffer-name
+      "* fakir mock proc buf *")))))
     ;; If we've got a buffer value then insert it.
     (when (kva :buffer pv-alist)
       (with-current-buffer pvbuf
-	(insert (kva :buffer pv-alist))))
+  (insert (kva :buffer pv-alist))))
     pvbuf))
 
 
@@ -175,7 +175,7 @@ hashtable if the process passed to them is `eq' to PROCESS-OBJ."
                     (or-args (plist-get ,proc-plist name) proc name))
                   (process-put (proc name value)
                     (or-args
-                     (if ,proc-plist 
+                     (if ,proc-plist
                          (plist-put ,proc-plist name value)
                          (setq ,proc-plist (list name value)))
                      proc name value))
@@ -235,7 +235,7 @@ In normal circumstances, we return what the BODY returned."
    (indent defun))
   (let ((get-or-create-buf (make-symbol "get-or-create-buf"))
         (fakir-kill-buffer (make-symbol "fakir-kill-buffer"))
-	(pvvar (make-symbol "pv"))
+  (pvvar (make-symbol "pv"))
         (pvoutbuf (make-symbol "pvoutbuf"))
         (pvbuf (make-symbol "buf"))
         (result (make-symbol "result")))
@@ -279,7 +279,7 @@ In normal circumstances, we return what the BODY returned."
                               (insert str)))
                           proc))
                        (delete-process (proc)
-                         (or-args 
+                         (or-args
                           (throw :mock-process-finished :mock-process-finished)
                           proc))
                        (set-process-buffer (proc buffer)
@@ -401,7 +401,7 @@ part."
   (let ((path
          (mapconcat
           'identity
-          (let ((l 
+          (let ((l
                  (-reduce
                   (lambda (a b)
                     (if (string= b "..")
@@ -453,6 +453,30 @@ part."
   (concat (fakir-file-directory fakir-file)
           (fakir-file-filename fakir-file)))
 
+
+(defun fakir--file-parent-directories (faked-file)
+  "Return the parent directories for a FAKED-FILE."
+  (let ((directory-path (fakir-file-directory faked-file))
+        (path "")
+        (path-list '("/")))
+    (dolist (path-part (split-string directory-path "/" t))
+      (let ((current-path (concat path "/" path-part)))
+        (push current-path path-list)
+        (setq path current-path)))
+    path-list))
+
+(defun fakir--namespace-put (faked-file namespace)
+  "Put given FAKED-FILE and its parent folders into the given NAMESPACE."
+  (puthash (fakir--file-path faked-file) faked-file namespace)
+  (dolist (parent-dir (fakir--file-parent-directories faked-file))
+    (puthash
+     parent-dir
+     (fakir-file
+      :filename (file-name-nondirectory parent-dir)
+      :directory (file-name-directory parent-dir)
+      :content "")
+     namespace)))
+
 (defun fakir--namespace (faked-file &rest other-files)
   "Make a namespace with FAKED-FILE in it.
 
@@ -460,20 +484,9 @@ Also adds the directory for the FAKED-FILE.
 
 If OTHER-FILES are specified they are added to."
   (let ((ns (make-hash-table :test 'equal)))
-    (puthash
-     (fakir--file-path faked-file) faked-file ns)
-    (puthash
-     (file-name-directory
-      (fakir--file-path faked-file))
-     faked-file ns)
-    (loop for f in other-files
-       do (progn
-            (puthash
-             (fakir--file-path f) f ns)
-            (puthash
-             (file-name-directory
-              (fakir--file-path faked-file))
-             faked-file ns)))
+    (fakir--namespace-put faked-file ns)
+    (dolist (other-file other-files)
+      (fakir--namespace-put other-file ns))
     ns))
 
 (defun fakir--namespace-lookup (file-name namespace)
