@@ -477,7 +477,8 @@ part."
      (fakir-file
       :filename (file-name-nondirectory parent-dir)
       :directory (file-name-directory parent-dir)
-      :content "")
+      :content ""
+      :directory-p t)
      namespace)))
 
 (defun fakir--namespace (faked-file &rest other-files)

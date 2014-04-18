@@ -265,6 +265,16 @@ work.  That seems better than trying to use a binary."
                '(20299 65357)
                (elt (file-attributes "/home/test/somefile") 5))))))
 
+(ert-deftest fakir-fake-file/creates-parent-directories ()
+  (fakir-fake-file
+      (fakir-file
+       :filename "somefile"
+       :directory "/home/fakir-test"
+       :content "somecontent")
+    (should (equal t (file-directory-p "/")))
+    (should (equal t (file-directory-p "/home")))
+    (should (equal t (file-directory-p "/home/fakir-test")))))
+
 (ert-deftest fakir-fake-file/insert-file-contents ()
   (fakir-fake-file
    (fakir-file
