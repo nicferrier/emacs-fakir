@@ -381,4 +381,57 @@ work.  That seems better than trying to use a binary."
     (should (equal t (file-regular-p "/home/fakir-test/testfile")))
     (should (equal nil (file-regular-p "/home/fakir-test/subdir")))))
 
+
+(ert-deftest fakir-fake-file/directory-files ()
+  (fakir-fake-file
+      (list
+       (fakir-file
+        :filename "somefile"
+        :directory "/home/fakir-test"
+        :content "blah!")
+       (fakir-file
+        :filename "otherfile"
+        :directory "/home/fakir-test/subdir"
+        :content "deep")
+       (fakir-file
+        :filename "otherdir"
+        :directory "/home/fakir-test"
+        :directory-p ""))
+    (should (equal
+             (directory-files "/home/fakir-test")
+             '("." ".." "otherdir" "somefile" "subdir")))
+    (should (equal
+             (directory-files "/home/fakir-test" t)
+             '("/home/fakir-test/." "/home/fakir-test/.." "/home/fakir-test/otherdir" "/home/fakir-test/somefile" "/home/fakir-test/subdir")))))
+
+(ert-deftest fakir-fake-file/directory-files-and-attributes ()
+  (fakir-fake-file
+      (list
+       (fakir-file
+        :filename "somefile"
+        :directory "/home/fakir-test"
+        :content "blah!")
+       (fakir-file
+        :filename "otherfile"
+        :directory "/home/fakir-test/subdir"
+        :content "deep")
+       (fakir-file
+        :filename "otherdir"
+        :directory "/home/fakir-test"
+        :directory-p ""))
+    (should (equal
+             (directory-files-and-attributes "/home/fakir-test")
+             '(("." t t t t t (20299 65355))
+               (".." t t t t t (20299 65355))
+               ("otherdir" "" t t t t (20299 65355))
+               ("somefile" nil t t t t (20299 65355))
+               ("subdir" t t t t t (20299 65355)))))
+    (should (equal
+             (directory-files-and-attributes "/home/fakir-test" t)
+             '(("/home/fakir-test/." t t t t t (20299 65355))
+               ("/home/fakir-test/.." t t t t t (20299 65355))
+               ("/home/fakir-test/otherdir" "" t t t t (20299 65355))
+               ("/home/fakir-test/somefile" nil t t t t (20299 65355))
+               ("/home/fakir-test/subdir" t t t t t (20299 65355)))))))
+
 ;;; fakir-tests.el ends here
