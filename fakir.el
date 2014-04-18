@@ -308,7 +308,8 @@ In normal circumstances, we return what the BODY returned."
   directory
   (content "")
   ;; obviously there should be all the state of the file here
-  (mtime "Mon, Feb 27 2012 22:10:19 GMT"))
+  (mtime "Mon, Feb 27 2012 22:10:19 GMT")
+  (directory-p nil))
 
 (defun fakir-file (&rest args)
   "Make a fakir-file, a struct.
@@ -320,7 +321,9 @@ In normal circumstances, we return what the BODY returned."
 :CONTENT is a string of content for the file
 
 :MTIME is the modified time, with a default around the time fakir
-was written."
+was written.
+
+:DIRECTORY-P specifies whether this file is a directory or a file."
   (apply 'make-fakir-file args))
 
 (defun fakir--file-check (file)
@@ -567,6 +570,14 @@ FAKED-FILE must be a `fakir-file' object or a list of
             (file-exists-p (file-name)
               (fakir--file-cond file-name
                 t
+                (funcall this-fn file-name)))
+            (file-directory-p (file-name)
+              (fakir--file-cond file-name
+                (fakir-file-directory-p this-fakir-file)
+                (funcall this-fn file-name)))
+            (file-regular-p (file-name)
+              (fakir--file-cond file-name
+                (not (fakir-file-directory-p this-fakir-file))
                 (funcall this-fn file-name)))
             (write-region (start end file-name &optional append visit lockname mustbenew)
               (fakir--file-cond file-name

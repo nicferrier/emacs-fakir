@@ -335,4 +335,32 @@ work.  That seems better than trying to use a binary."
            (expand-file-name "blah3" ctx-dir))
          "/tmp/blah3"))))))
 
+(ert-deftest fakir-fake-file/file-regular-p ()
+  (fakir-fake-file
+      (list
+       (fakir-file
+        :filename "testfile"
+        :directory "/home/fakir-test"
+        :content "file content")
+       (fakir-file
+        :filename "subdir"
+        :directory "/home/fakir-test"
+        :directory-p t))
+    (should (equal t (file-directory-p "/home/fakir-test/subdir")))
+    (should (equal nil (file-directory-p "/home/fakir-test/testfile")))))
+
+(ert-deftest fakir-fake-file/file-directory-p ()
+  (fakir-fake-file
+      (list
+       (fakir-file
+        :filename "testfile"
+        :directory "/home/fakir-test"
+        :content "file content")
+       (fakir-file
+        :filename "subdir"
+        :directory "/home/fakir-test"
+        :directory-p t))
+    (should (equal t (file-regular-p "/home/fakir-test/testfile")))
+    (should (equal nil (file-regular-p "/home/fakir-test/subdir")))))
+
 ;;; fakir-tests.el ends here
