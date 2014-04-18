@@ -363,7 +363,8 @@ If RAW is t then return the raw value, a string."
 
 Currently WE ONLY SUPPORT MODIFIED-TIME."
   (fakir--file-check file)
-  (list t t t t t
+  (list (fakir-file-directory-p file)
+        t t t t
         (fakir--file-mod-time file)))
 
 (defun fakir--file-home (file)

@@ -144,6 +144,14 @@ work.  That seems better than trying to use a binary."
              :directory "/home/dir"
              :mtime "Mon, Feb 27 2012 22:10:21 GMT")))
     (should (equal
+             (list nil t t t t '(20299 65357))
+             (fakir--file-attribs ef))))
+  (let ((ef (make-fakir-file
+             :filename "somedir"
+             :directory "/home/dir"
+             :mtime "Mon, Feb 27 2012 22:10:21 GMT"
+             :directory-p t)))
+    (should (equal
              (list t t t t t '(20299 65357))
              (fakir--file-attribs ef)))))
 
