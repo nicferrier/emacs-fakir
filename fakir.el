@@ -581,17 +581,19 @@ ID-FORMAT is ignored.  Instead we use the fakir format (see `fakir--file-attribs
          (directory-fakir-files (fakir--directory-fakir-files directory))
          files-and-attributes)
 
-    (push (cons (if full
-                    (concat (file-name-as-directory directory) ".")
-                  ".")
-                (fakir--file-attribs directory-fakir-file))
-          files-and-attributes)
+    (if (or (not match) (string-match match "."))
+        (push (cons (if full
+                       (concat (file-name-as-directory directory) ".")
+                     ".")
+                   (fakir--file-attribs directory-fakir-file))
+             files-and-attributes))
 
-    (push (cons (if full
-                    (concat (file-name-as-directory directory) "..")
-                  "..")
-                (fakir--file-attribs parent-fakir-file))
-          files-and-attributes)
+    (if (or (not match) (string-match match ".."))
+        (push (cons (if full
+                        (concat (file-name-as-directory directory) "..")
+                      "..")
+                    (fakir--file-attribs parent-fakir-file))
+              files-and-attributes))
 
     (dolist (fakir-file directory-fakir-files)
       (if (or (not match) (string-match match (fakir-file-filename fakir-file)))

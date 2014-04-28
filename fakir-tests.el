@@ -115,10 +115,10 @@ work.  That seems better than trying to use a binary."
       ((a 20)
        (:somevar "somevar"))
       (let ((x "a string of text"))
-	(when (eq :mock-process-finished
-		  (catch :mock-process-finished
-		    (delete-process :fakeproc)))
-	  "the process finished"))))))
+  (when (eq :mock-process-finished
+      (catch :mock-process-finished
+        (delete-process :fakeproc)))
+    "the process finished"))))))
 
 (ert-deftest fakir--file-fqn ()
   "Test we can make fully qualified names for files."
@@ -224,7 +224,7 @@ work.  That seems better than trying to use a binary."
 
 (ert-deftest fakir--write-region ()
   "Test writing fake stuff."
-  (let ((fl 
+  (let ((fl
          (fakir-file :filename "nic" :directory "/tmp/"
                      :content "blah")))
     ;; Overwrite the faked content
@@ -402,7 +402,10 @@ work.  That seems better than trying to use a binary."
              '("." ".." "otherdir" "somefile" "subdir")))
     (should (equal
              (directory-files "/home/fakir-test" t)
-             '("/home/fakir-test/." "/home/fakir-test/.." "/home/fakir-test/otherdir" "/home/fakir-test/somefile" "/home/fakir-test/subdir")))))
+             '("/home/fakir-test/." "/home/fakir-test/.." "/home/fakir-test/otherdir" "/home/fakir-test/somefile" "/home/fakir-test/subdir")))
+    (should (equal
+             (directory-files "/home/fakir-test" t "otherdir")
+             '("/home/fakir-test/otherdir")))))
 
 (ert-deftest fakir-fake-file/directory-files-and-attributes ()
   (fakir-fake-file
