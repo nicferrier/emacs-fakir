@@ -115,10 +115,10 @@ work.  That seems better than trying to use a binary."
       ((a 20)
        (:somevar "somevar"))
       (let ((x "a string of text"))
-	(when (eq :mock-process-finished
-		  (catch :mock-process-finished
-		    (delete-process :fakeproc)))
-	  "the process finished"))))))
+  (when (eq :mock-process-finished
+      (catch :mock-process-finished
+        (delete-process :fakeproc)))
+    "the process finished"))))))
 
 (ert-deftest fakir--file-fqn ()
   "Test we can make fully qualified names for files."
@@ -143,6 +143,14 @@ work.  That seems better than trying to use a binary."
              :filename "somefile"
              :directory "/home/dir"
              :mtime "Mon, Feb 27 2012 22:10:21 GMT")))
+    (should (equal
+             (list nil t t t t '(20299 65357))
+             (fakir--file-attribs ef))))
+  (let ((ef (make-fakir-file
+             :filename "somedir"
+             :directory "/home/dir"
+             :mtime "Mon, Feb 27 2012 22:10:21 GMT"
+             :directory-p t)))
     (should (equal
              (list t t t t t '(20299 65357))
              (fakir--file-attribs ef)))))
@@ -216,7 +224,7 @@ work.  That seems better than trying to use a binary."
 
 (ert-deftest fakir--write-region ()
   "Test writing fake stuff."
-  (let ((fl 
+  (let ((fl
          (fakir-file :filename "nic" :directory "/tmp/"
                      :content "blah")))
     ;; Overwrite the faked content
@@ -264,6 +272,16 @@ work.  That seems better than trying to use a binary."
       (should (equal
                '(20299 65357)
                (elt (file-attributes "/home/test/somefile") 5))))))
+
+(ert-deftest fakir-fake-file/creates-parent-directories ()
+  (fakir-fake-file
+      (fakir-file
+       :filename "somefile"
+       :directory "/home/fakir-test"
+       :content "somecontent")
+    (should (equal t (file-directory-p "/")))
+    (should (equal t (file-directory-p "/home")))
+    (should (equal t (file-directory-p "/home/fakir-test")))))
 
 (ert-deftest fakir-fake-file/insert-file-contents ()
   (fakir-fake-file
@@ -334,5 +352,89 @@ work.  That seems better than trying to use a binary."
          (let ((ctx-dir "/tmp"))
            (expand-file-name "blah3" ctx-dir))
          "/tmp/blah3"))))))
+
+(ert-deftest fakir-fake-file/file-regular-p ()
+  (fakir-fake-file
+      (list
+       (fakir-file
+        :filename "testfile"
+        :directory "/home/fakir-test"
+        :content "file content")
+       (fakir-file
+        :filename "subdir"
+        :directory "/home/fakir-test"
+        :directory-p t))
+    (should (equal t (file-directory-p "/home/fakir-test/subdir")))
+    (should (equal nil (file-directory-p "/home/fakir-test/testfile")))))
+
+(ert-deftest fakir-fake-file/file-directory-p ()
+  (fakir-fake-file
+      (list
+       (fakir-file
+        :filename "testfile"
+        :directory "/home/fakir-test"
+        :content "file content")
+       (fakir-file
+        :filename "subdir"
+        :directory "/home/fakir-test"
+        :directory-p t))
+    (should (equal t (file-regular-p "/home/fakir-test/testfile")))
+    (should (equal nil (file-regular-p "/home/fakir-test/subdir")))))
+
+
+(ert-deftest fakir-fake-file/directory-files ()
+  (fakir-fake-file
+      (list
+       (fakir-file
+        :filename "somefile"
+        :directory "/home/fakir-test"
+        :content "blah!")
+       (fakir-file
+        :filename "otherfile"
+        :directory "/home/fakir-test/subdir"
+        :content "deep")
+       (fakir-file
+        :filename "otherdir"
+        :directory "/home/fakir-test"
+        :directory-p ""))
+    (should (equal
+             (directory-files "/home/fakir-test")
+             '("." ".." "otherdir" "somefile" "subdir")))
+    (should (equal
+             (directory-files "/home/fakir-test" t)
+             '("/home/fakir-test/." "/home/fakir-test/.." "/home/fakir-test/otherdir" "/home/fakir-test/somefile" "/home/fakir-test/subdir")))
+    (should (equal
+             (directory-files "/home/fakir-test" t "otherdir")
+             '("/home/fakir-test/otherdir")))))
+
+(ert-deftest fakir-fake-file/directory-files-and-attributes ()
+  (fakir-fake-file
+      (list
+       (fakir-file
+        :filename "somefile"
+        :directory "/home/fakir-test"
+        :content "blah!")
+       (fakir-file
+        :filename "otherfile"
+        :directory "/home/fakir-test/subdir"
+        :content "deep")
+       (fakir-file
+        :filename "otherdir"
+        :directory "/home/fakir-test"
+        :directory-p ""))
+    (should (equal
+             (directory-files-and-attributes "/home/fakir-test")
+             '(("." t t t t t (20299 65355))
+               (".." t t t t t (20299 65355))
+               ("otherdir" "" t t t t (20299 65355))
+               ("somefile" nil t t t t (20299 65355))
+               ("subdir" t t t t t (20299 65355)))))
+    (should (equal
+             (directory-files-and-attributes "/home/fakir-test" t)
+             '(("/home/fakir-test/." t t t t t (20299 65355))
+               ("/home/fakir-test/.." t t t t t (20299 65355))
+               ("/home/fakir-test/otherdir" "" t t t t (20299 65355))
+               ("/home/fakir-test/somefile" nil t t t t (20299 65355))
+               ("/home/fakir-test/subdir" t t t t t (20299 65355)))))))
 
 ;;; fakir-tests.el ends here
