@@ -423,6 +423,12 @@ work.  That seems better than trying to use a binary."
         :directory "/home/fakir-test"
         :directory-p ""))
     (should (equal
+             nil
+             (directory-files-and-attributes "/home/fakir-test/somefile")))
+    (should (equal
+             (directory-files-and-attributes "/home/fakir-test")
+             (directory-files-and-attributes "/home/fakir-test/")))
+    (should (equal
              (directory-files-and-attributes "/home/fakir-test")
              '(("." t t t t t (20299 65355))
                (".." t t t t t (20299 65355))
@@ -436,5 +442,15 @@ work.  That seems better than trying to use a binary."
                ("/home/fakir-test/otherdir" "" t t t t (20299 65355))
                ("/home/fakir-test/somefile" nil t t t t (20299 65355))
                ("/home/fakir-test/subdir" t t t t t (20299 65355)))))))
+
+(ert-deftest fakir-fake-file/file-accessible-directory-p ()
+  (fakir-fake-file
+      (fakir-file
+       :filename "somefile"
+       :directory "/home/fakir-test"
+       :content "blah!")
+    (should (equal t (file-accessible-directory-p "/home/fakir-test")))
+    (should (equal t (file-accessible-directory-p "/home/fakir-test/")))
+    (should (equal nil (file-accessible-directory-p "/home/fakir-test/somefile")))))
 
 ;;; fakir-tests.el ends here
