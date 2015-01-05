@@ -503,6 +503,9 @@ Looks up the FILE-NAME"
    (gethash file-name namespace)
    (gethash
     (file-name-as-directory file-name)
+    namespace)
+   (gethash
+    (directory-file-name file-name)
     namespace)))
 
 (defvar fakir-file-namespace nil
@@ -573,41 +576,42 @@ If MATCH is non-nil, mention only file names that match the regexp MATCH.
 If NOSORT is non-nil, the list is not sorted--its order is unpredictable.
  NOSORT is useful if you plan to sort the result yourself.
 ID-FORMAT is ignored.  Instead we use the fakir format (see `fakir--file-attribs')."
-  (let* ((directory-fakir-file
-          (fakir--namespace-lookup
-           directory
-           fakir-file-namespace))
-         (parent-fakir-file (fakir--parent-fakir-file directory-fakir-file))
-         (directory-fakir-files (fakir--directory-fakir-files directory))
-         files-and-attributes)
+  (let ((directory-fakir-file
+         (fakir--namespace-lookup
+          directory
+          fakir-file-namespace)))
+    (when (fakir-file-directory-p directory-fakir-file)
+      (let* ((parent-fakir-file (fakir--parent-fakir-file directory-fakir-file))
+             (directory-fakir-files (fakir--directory-fakir-files directory))
+             files-and-attributes)
 
-    (if (or (not match) (string-match match "."))
-        (push (cons (if full
-                       (concat (file-name-as-directory directory) ".")
-                     ".")
-                   (fakir--file-attribs directory-fakir-file))
-             files-and-attributes))
+        (if (or (not match) (string-match match "."))
+            (push (cons (if full
+                            (concat (file-name-as-directory directory) ".")
+                          ".")
+                        (fakir--file-attribs directory-fakir-file))
+                  files-and-attributes))
 
-    (if (or (not match) (string-match match ".."))
-        (push (cons (if full
-                        (concat (file-name-as-directory directory) "..")
-                      "..")
-                    (fakir--file-attribs parent-fakir-file))
-              files-and-attributes))
+        (if (or (not match) (string-match match ".."))
+            (push (cons (if full
+                            (concat (file-name-as-directory directory) "..")
+                          "..")
+                        (fakir--file-attribs parent-fakir-file))
+                  files-and-attributes))
 
-    (dolist (fakir-file directory-fakir-files)
-      (if (or (not match) (string-match match (fakir-file-filename fakir-file)))
-          (push (cons (if full
-                          (fakir--file-fqn fakir-file)
-                        (fakir-file-filename fakir-file))
-                      (fakir--file-attribs fakir-file))
-                files-and-attributes)))
+        (dolist (fakir-file directory-fakir-files)
+          (if (or (not match) (string-match match (fakir-file-filename fakir-file)))
+              (push (cons (if full
+                              (fakir--file-fqn fakir-file)
+                            (fakir-file-filename fakir-file))
+                          (fakir--file-attribs fakir-file))
+                    files-and-attributes)))
 
-    (if nosort
-        files-and-attributes
-      (sort files-and-attributes
-            #'(lambda (s1 s2)
-                (string-lessp (car s1) (car s2)))))))
+        (if nosort
+            files-and-attributes
+          (sort files-and-attributes
+                #'(lambda (s1 s2)
+                    (string-lessp (car s1) (car s2)))))))))
 
 (defun fakir--directory-files (directory &optional full match nosort)
   "Return a list of names of faked files in DIRECTORY.
@@ -692,7 +696,11 @@ FAKED-FILE must be a `fakir-file' object or a list of
             (directory-files-and-attributes (directory &optional full match nosort id-format)
               (fakir--file-cond directory
                 (fakir--directory-files-and-attributes directory full match nosort id-format)
-                (funcall this-fn directory full match nosort))))
+                (funcall this-fn directory full match nosort)))
+            (file-accessible-directory-p (file-name)
+              (fakir--file-cond file-name
+                (and (fakir--directory-files-and-attributes file-name t ".") t)
+                (funcall this-fn file-name))))
          ,@body))))
 
 (defmacro fakir-mock-file (faked-file &rest body)
